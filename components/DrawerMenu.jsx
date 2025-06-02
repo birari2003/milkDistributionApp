@@ -5,6 +5,7 @@ import ManageEmployees from '../screens/ManageEmployees';
 import ManageCustomers from '../screens/ManageCustomers';
 import MilkInventory from '../screens/MilkInventory';
 import PaymentsScreen from '../screens/PaymentsScreen';
+import HomeScreen from '../screens/HomeScreen';
 import { Ionicons } from '@expo/vector-icons';
 
 const Drawer = createDrawerNavigator();
@@ -19,6 +20,15 @@ const DrawerMenu = () => {
             <Drawer.Screen
                 name="Home"
                 component={BottomTabNavigator}
+                options={{
+                    drawerIcon: ({ color, size }) => (
+                        <Ionicons name="home-outline" size={size} color={color} />
+                    ),
+                }}
+            />
+            <Drawer.Screen
+                name="HomeScreen"
+                component={HomeScreen}
                 options={{
                     drawerIcon: ({ color, size }) => (
                         <Ionicons name="home-outline" size={size} color={color} />
