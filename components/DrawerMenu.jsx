@@ -79,6 +79,7 @@ const DrawerMenu = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
         }}
       />
+      {/* Add more screens as needed */}
     </Drawer.Navigator>
   );
 };
