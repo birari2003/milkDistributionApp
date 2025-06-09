@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { View, Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+
 import BottomTabNavigator from './BottomTabNavigator';
 import ManageEmployees from '../screens/ManageEmployees';
 import ManageCustomers from '../screens/ManageCustomers';
 import MilkInventory from '../screens/MilkInventory';
 import PaymentsScreen from '../screens/PaymentsScreen';
-import { Ionicons } from '@expo/vector-icons';
+import HomeScreen from '../screens/HomeScreen';
+import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
 
 import AddEmployee from '../screens/sample';
 
