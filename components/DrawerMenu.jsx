@@ -7,6 +7,8 @@ import MilkInventory from '../screens/MilkInventory';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import { Ionicons } from '@expo/vector-icons';
 
+import AddEmployee from '../screens/sample';
+
 const Drawer = createDrawerNavigator();
 
 const DrawerMenu = () => {
@@ -25,15 +27,17 @@ const DrawerMenu = () => {
                     ),
                 }}
             />
+
             <Drawer.Screen
-                name="Manage Employees"
-                component={ManageEmployees}
+                name="Add Employee"
+                component={AddEmployee}
                 options={{
                     drawerIcon: ({ color, size }) => (
                         <Ionicons name="people-outline" size={size} color={color} />
                     ),
                 }}
             />
+
             <Drawer.Screen
                 name="Manage Customers"
                 component={ManageCustomers}
