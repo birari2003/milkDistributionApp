@@ -5,12 +5,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomTabNavigator from './BottomTabNavigator';
-import ManageEmployees from '../screens/ManageEmployees';
+import AddEmployee from '../screens/ManageEmployees';
 import ManageCustomers from '../screens/ManageCustomers';
 import MilkInventory from '../screens/MilkInventory';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import HomeScreen from '../screens/HomeScreen';
 import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
+import AreaScreen from '../screens/addArea';
+
 
 const Drawer = createDrawerNavigator();
 
@@ -40,8 +42,16 @@ const DrawerMenu = () => {
         }}
       />
       <Drawer.Screen
-        name="Manage Employees"
-        component={ManageEmployees}
+        name="Add Area"
+        component={AreaScreen}
+        options={{
+          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+        }}
+      />
+
+      <Drawer.Screen
+        name="Add Employee"
+        component={AddEmployee}
         options={{
           drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
         }}

@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,8 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function OwnerLogin({ navigation }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-
-
 
   const handleLogin = async () => {
   try {

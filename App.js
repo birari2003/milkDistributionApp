@@ -35,6 +35,8 @@ import OwnerSignup from './screens/OwnerSignup';
 import DrawerMenu from './components/DrawerMenu';
 import OwnerDashboard from './screens/OwnerDashboard';
 import HomeScreen from './screens/HomeScreen';
+import AreaScreen from './screens/addArea';
+import AddEmployee from './screens/ManageEmployees';
 
 export const AuthContext = createContext();
 
@@ -65,6 +67,8 @@ export default function App() {
           )}
           <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
           <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="addArea" component={AreaScreen} />
+          <Stack.Screen name="ManageEmployees" component={AddEmployee} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthContext.Provider>
