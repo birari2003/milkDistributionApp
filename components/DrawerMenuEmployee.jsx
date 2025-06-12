@@ -10,6 +10,7 @@ import PaymentsScreen from '../screens/PaymentsScreen';
 import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
 import AreaScreen from '../screens/addArea';
 import AddCustomer from '../screens/addCustomer';
+import SeeCustomer from '../screens/seeCustomer';
 
 
 const Drawer = createDrawerNavigator();
@@ -38,6 +39,14 @@ const DrawerMenuEmployee = () => {
       <Drawer.Screen
         name="Manage Customers"
         component={AddCustomer}
+        options={{
+          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+        }}
+      />
+
+      <Drawer.Screen
+        name="See Customers"
+        component={SeeCustomer}
         options={{
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}

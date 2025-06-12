@@ -42,6 +42,7 @@ import AddEmployee from './screens/ManageEmployees';
 import EmployeeDashboard from './screens/EmployeeDashboard';
 import AddCustomer from './screens/addCustomer';
 import DrawerMenuCustomer from './components/DrawerMenuCustomer';
+import seeCustomer from './screens/seeCustomer';
 
 export const AuthContext = createContext();
 
@@ -91,6 +92,7 @@ export default function App() {
           <Stack.Screen name="ManageEmployees" component={AddEmployee} />
           <Stack.Screen name="EmployeeDashboard" component={EmployeeDashboard} />
           <Stack.Screen name="addCustomer" component={AddCustomer} />
+          <Stack.Screen name="seeCustomer" component={seeCustomer} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthContext.Provider>

@@ -83,22 +83,6 @@ const AddCustomer = () => {
       setMessage('❌ Server error. Please try again.');
     }
   };
-
-  const fetchCustomers = async () => {
-    try {
-      const res = await fetch('http://192.168.43.175:3000/api/customers');
-      const data = await res.json();
-      if (data.success) {
-        setCustomers(data.customers);
-        setShowList(true);
-      } else {
-        alert('Failed to fetch customers');
-      }
-    } catch (err) {
-      alert('Error fetching customer data');
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Add Customer</Text>
@@ -171,26 +155,7 @@ const AddCustomer = () => {
 
       {message !== '' && (
         <Text style={styles.successMessage}>{message}</Text>
-      )}
-
-      <View style={{ marginTop: 20 }}>
-        <Button title="See Customer List" onPress={fetchCustomers} />
-      </View>
-
-      {showList && (
-        <FlatList
-          style={{ marginTop: 20 }}
-          data={customers}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.phone}>{item.phone}</Text>
-              <Text style={styles.address}>{item.address}</Text>
-            </View>
-          )}
-        />
-      )}
+      )}  
     </ScrollView>
 
   );
@@ -215,17 +180,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  card: {
-    backgroundColor: '#e6f2ff',
-    padding: 15,
-    borderRadius: 8,
-    borderBlockColor: '#007bff',
-    borderWidth: 1,
-    marginBottom: 10,
-  },
-  name: { fontWeight: 'bold', fontSize: 16 },
-  phone: { marginTop: 5, color: '#333' },
-  address: { color: '#555' },
 });
 
 export default AddCustomer;
