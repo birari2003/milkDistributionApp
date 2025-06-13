@@ -232,6 +232,129 @@ app.post('/api/add-customer', async (req, res) => {
 });
 
 
+
+app.post('/api/milk-report', (req, res) => {
+  const {
+    name,
+    phone,
+    address,
+    got_today,
+    will_get_tomorrow,
+    extra_today,
+    extra_tomorrow
+  } = req.body;
+
+  if (!name || !phone || !address) {
+    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  }
+
+  // Step 1: Get area_id from customer table
+  const areaQuery = `SELECT area_id FROM customer WHERE phone = ? LIMIT 1`;
+
+  db.query(areaQuery, [phone], (err, results) => {
+    if (err) {
+      console.error('Error fetching area_id:', err);
+      return res.status(500).json({ success: false, message: 'Database error while fetching area_id' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    const area_id = results[0].area_id;
+
+    // Step 2: Insert milk report with area_id
+    const insertQuery = `
+      INSERT INTO milkreport 
+        (name, phone, address, got_today, will_get_tomorrow, extra_today, extra_tomorrow, area_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.query(insertQuery, [
+      name,
+      phone,
+      address,
+      got_today ? 1 : 0,
+      will_get_tomorrow ? 1 : 0,
+      extra_today,
+      extra_tomorrow,
+      area_id
+    ], (err, result) => {
+      if (err) {
+        console.error('Database insert error:', err);
+        return res.status(500).json({ success: false, message: 'Database error while inserting report' });
+      }
+
+      res.json({ success: true, message: 'Report submitted successfully' });
+    });
+  });
+});
+
+
+
+app.get('/api/todays-milk-report', (req, res) => {
+  const sql = `
+    SELECT 
+      e.name AS employee_name,
+      e.contact AS employee_phone,
+      a.landmark AS area_landmark,
+      a.id AS area_id,
+
+      -- Date fields
+      CURDATE() AS today_date,
+      CURDATE() + INTERVAL 1 DAY AS tomorrow_date,
+
+      -- 1. Total customers who got milk today
+      SUM(mr.got_today = 1) AS total_customers_today,
+
+      -- 2. Total customers who will get milk tomorrow
+      SUM(mr.will_get_tomorrow = 1) AS total_customers_tomorrow,
+
+      -- 3. Total milk distributed today
+      SUM(
+        CASE 
+          WHEN mr.got_today = 1 THEN 
+            CASE 
+              WHEN mr.extra_today > 0 THEN mr.extra_today 
+              ELSE c.daily_milk_needed 
+            END 
+          ELSE 0 
+        END
+      ) AS total_milk_today,
+
+      -- 4. Total milk required for tomorrow
+      SUM(
+        CASE 
+          WHEN mr.will_get_tomorrow = 1 THEN 
+            CASE 
+              WHEN mr.extra_tomorrow > 0 THEN mr.extra_tomorrow 
+              ELSE c.daily_milk_needed 
+            END 
+          ELSE 0 
+        END
+      ) AS total_milk_tomorrow
+
+    FROM employees e
+    JOIN area a ON a.id = e.area_id
+    JOIN customer c ON c.area_id = a.id AND c.status = 'active'
+    LEFT JOIN milkreport mr ON mr.phone = c.phone AND mr.area_id = a.id
+
+    GROUP BY a.id;
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching milk report:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+    res.json({ success: true, data: results });
+  });
+});
+
+
+
+
+
 app.listen(3000, '0.0.0.0', () => {
     console.log("Server running on port 3000");
 });
+ 

@@ -12,6 +12,7 @@ import PaymentsScreen from '../screens/PaymentsScreen';
 import HomeScreen from '../screens/HomeScreen';
 import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
 import AreaScreen from '../screens/addArea';
+import DailyReport from '../screens/dailyReport';
 
 
 const Drawer = createDrawerNavigator();
@@ -66,6 +67,16 @@ const DrawerMenu = () => {
                     drawerIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
                 }}
             />
+
+            <Drawer.Screen
+                name="Daily Report"
+                component={DailyReport}
+                options={{
+                    drawerIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
+                }}
+            />
+
+
             <Drawer.Screen
                 name="Milk Inventory"
                 component={MilkInventory}
