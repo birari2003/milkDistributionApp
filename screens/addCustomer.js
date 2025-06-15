@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import {
   View,
   Text,
@@ -12,8 +13,6 @@ import { Picker } from '@react-native-picker/picker';
 
 const AddCustomer = () => {
   const [areas, setAreas] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [showList, setShowList] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -23,7 +22,9 @@ const AddCustomer = () => {
     area_id: '',
     daily_milk_needed: '',
     extra_milk_if_needed: '',
+    milk_category: '', // new
   });
+
 
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
@@ -83,6 +84,7 @@ const AddCustomer = () => {
       setMessage('❌ Server error. Please try again.');
     }
   };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Add Customer</Text>
@@ -142,20 +144,23 @@ const AddCustomer = () => {
       />
       {errors.daily_milk_needed && <Text style={styles.error}>{errors.daily_milk_needed}</Text>}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Extra Milk if Needed (Litres)"
-        keyboardType="numeric"
-        value={form.extra_milk_if_needed}
-        onChangeText={text => setForm({ ...form, extra_milk_if_needed: text })}
-      />
-      {errors.extra_milk_if_needed && <Text style={styles.error}>{errors.extra_milk_if_needed}</Text>}
+      <Text style={styles.label}>Milk Category</Text>
+      <Picker
+        selectedValue={form.milk_category}
+        onValueChange={value => setForm({ ...form, milk_category: value })}
+      >
+        <Picker.Item label="Select Milk Category" value="" />
+        <Picker.Item label="Cow's Milk" value="cows" />
+        <Picker.Item label="Buffalo's Milk" value="buffalo" />
+      </Picker>
+      {errors.milk_category && <Text style={styles.error}>{errors.milk_category}</Text>}
+
 
       <Button title="Add Customer" onPress={handleSubmit} />
 
       {message !== '' && (
         <Text style={styles.successMessage}>{message}</Text>
-      )}  
+      )}
     </ScrollView>
 
   );

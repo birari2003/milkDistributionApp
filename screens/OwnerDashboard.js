@@ -15,7 +15,7 @@ const OwnerDashboard = () => {
 
             {/* Scrollable Body */}
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.section}>Today's Overview</Text>
+                <Text style={styles.section}>Today's Overview....</Text>
 
                 <View style={styles.infoRow}>
                     <InfoCard title="Total Milk Distributed" value="500 L" />

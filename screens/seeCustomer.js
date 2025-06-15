@@ -1,29 +1,40 @@
 import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
   FlatList,
-  TextInput,
-  StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  StyleSheet,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
-import Checkbox from 'expo-checkbox';
+import ReportSubmit from '../components/reportSubmit';
+import UpdateCustomer from '../components/updateCustomer';
 
 const SeeCustomer = () => {
   const [customers, setCustomers] = useState([]);
-  const [showList, setShowList] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(null); // for expanded item
+  const [activeTab, setActiveTab] = useState(null);     // 'update' or 'report'
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://192.168.43.175:3000/api/customers');
+      const userStr = await AsyncStorage.getItem('user');
+      const user = JSON.parse(userStr);
+
+      if (!user?.area_id) {
+        alert('Missing area information');
+        return;
+      }
+
+      const res = await fetch(`http://192.168.43.175:3000/api/customers?area_id=${user.area_id}`);
       const data = await res.json();
+
       if (data.success) {
         const enrichedData = data.customers.map(c => ({
+
           ...c,
           getToday: false,
           getTomorrow: false,
@@ -32,7 +43,6 @@ const SeeCustomer = () => {
           submitted: false,
         }));
         setCustomers(enrichedData);
-        setShowList(true);
       } else {
         alert('Failed to fetch customers');
       }
@@ -47,43 +57,16 @@ const SeeCustomer = () => {
     fetchCustomers();
   }, []);
 
-  const handleChange = (index, field, value) => {
-    const updated = [...customers];
-    updated[index][field] = value;
-    setCustomers(updated);
-  };
-
- const handleSubmit = async (customer, index) => {
-  try {
-    const response = await fetch('http://192.168.43.175:3000/api/milk-report', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: customer.name,
-        phone: customer.phone,
-        address: customer.address,
-        got_today: customer.getToday,
-        will_get_tomorrow: customer.getTomorrow,
-        extra_today: parseFloat(customer.extraToday || 0),
-        extra_tomorrow: parseFloat(customer.extraTomorrow || 0),
-      })
-    });
-
-    const data = await response.json();
-    if (data.success) {
-      const updated = [...customers];
-      updated[index].submitted = true;
-      setCustomers(updated);
+  const handleToggle = (index, tab) => {
+    // If the same customer and same tab is tapped again, close it
+    if (activeIndex === index && activeTab === tab) {
+      setActiveIndex(null);
+      setActiveTab(null);
     } else {
-      Alert.alert('Error', 'Failed to submit report');
+      setActiveIndex(index);
+      setActiveTab(tab);
     }
-  } catch (err) {
-    Alert.alert('Error', 'Network error while submitting report');
-  }
-};
-
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,61 +74,46 @@ const SeeCustomer = () => {
 
       {loading ? (
         <ActivityIndicator size="large" color="#007BFF" style={{ marginTop: 20 }} />
-      ) : showList ? (
+      ) : customers.length > 0 ? (
         <FlatList
           data={customers}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
             <View style={styles.card}>
-              <View style={styles.leftColumn}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.phone}>{item.phone}</Text>
-                <Text style={styles.address}>{item.address}</Text>
+              {/* Customer Basic Info */}
+              <View style={styles.rowSpaceBetween}>
+                <View>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.phone}>{item.phone}</Text>
+                  <Text style={styles.address}>{item.address}</Text>
+                </View>
               </View>
 
-              <View style={styles.rightColumn}>
-                <View style={styles.checkboxRow}>
-                  <Checkbox
-                    value={item.getToday}
-                    onValueChange={(val) => handleChange(index, 'getToday', val)}
-                  />
-                  <Text style={styles.checkboxLabel}>Got milk today?</Text>
-                </View>
-                <TextInput
-                  placeholder="Extra today (L)"
-                  keyboardType="numeric"
-                  style={styles.input}
-                  value={item.extraToday}
-                  onChangeText={(val) => handleChange(index, 'extraToday', val)}
-                />
-
-                <View style={styles.checkboxRow}>
-                  <Checkbox
-                    value={item.getTomorrow}
-                    onValueChange={(val) => handleChange(index, 'getTomorrow', val)}
-                  />
-                  <Text style={styles.checkboxLabel}>Will get tomorrow?</Text>
-                </View>
-                <TextInput
-                  placeholder="Extra tomorrow (L)"
-                  keyboardType="numeric"
-                  style={styles.input}
-                  value={item.extraTomorrow}
-                  onChangeText={(val) => handleChange(index, 'extraTomorrow', val)}
-                />
+              {/* Buttons */}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.btn}
+                  onPress={() => handleToggle(index, 'update')}
+                >
+                  <Text style={styles.btnText}>Update Customer</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
-  style={styles.submitBtn}
-  onPress={() => handleSubmit(item, index)}
->
-  <Text style={styles.submitBtnText}>Submit</Text>
-</TouchableOpacity>
-
-{item.submitted && (
-  <Text style={styles.submittedText}>Information Submitted...</Text>
-)}
-
+                  style={[styles.btn, { backgroundColor: '#28a745' }]}
+                  onPress={() => handleToggle(index, 'report')}
+                >
+                  <Text style={styles.btnText}>Today's Report</Text>
+                </TouchableOpacity>
               </View>
+
+              {/* Conditional Rendering */}
+              {activeIndex === index && activeTab === 'update' && (
+                <UpdateCustomer customer={item} />
+              )}
+
+              {activeIndex === index && activeTab === 'report' && (
+                <ReportSubmit customer={item} index={index} />
+              )}
             </View>
           )}
         />
@@ -169,9 +137,14 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  noDataText: {
+    textAlign: 'center',
+    marginTop: 30,
+    fontSize: 16,
+    color: '#999',
+  },
   card: {
     backgroundColor: '#fff',
-    flexDirection: 'row',
     padding: 15,
     borderRadius: 12,
     marginVertical: 8,
@@ -181,13 +154,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  leftColumn: {
-    flex: 1.2,
-    paddingRight: 10,
-    justifyContent: 'center',
-  },
-  rightColumn: {
-    flex: 1.8,
+  rowSpaceBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   name: {
     fontSize: 18,
@@ -203,49 +172,26 @@ const styles = StyleSheet.create({
   address: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 10,
   },
-  checkboxRow: {
+  buttonRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 8,
+    gap: 8,
   },
-  checkboxLabel: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#333',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    marginTop: 6,
-    height: 40,
-  },
-  submitBtn: {
-    marginTop: 10,
+  btn: {
+    flex: 1,
     backgroundColor: '#007BFF',
-    borderRadius: 6,
     paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 6,
   },
-  submitBtnText: {
+  btnText: {
     color: '#fff',
     textAlign: 'center',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  noDataText: {
-    textAlign: 'center',
-    marginTop: 30,
-    fontSize: 16,
-    color: '#999',
-  },
-  submittedText: {
-  marginTop: 6,
-  fontSize: 14,
-  color: 'green',
-  fontWeight: '600',
-},
-
 });
 
 export default SeeCustomer;

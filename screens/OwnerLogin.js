@@ -30,7 +30,7 @@ export default function LoginScreen({ navigation }) {
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
         await AsyncStorage.setItem('role', data.role);
 
-        setRole(data.role); // ✅ triggers re-render and route change in App.js
+        setRole(data.role); 
       } else {
         Alert.alert('Login Failed', data.message || 'Invalid credentials');
       }
