@@ -86,6 +86,9 @@ const SeeCustomer = () => {
                   <Text style={styles.name}>{item.name}</Text>
                   <Text style={styles.phone}>{item.phone}</Text>
                   <Text style={styles.address}>{item.address}</Text>
+                  <Text style={styles.deliveryTime}>
+                    Delivery: {item.delivery_time === 'morning' ? 'Morning' : 'Evening'}
+                  </Text>
                 </View>
               </View>
 
@@ -143,6 +146,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
+  deliveryTime: {
+    fontSize: 14,
+    color: '#888',
+    fontStyle: 'italic',
+    marginBottom: 6,
+  },
+
   card: {
     backgroundColor: '#fff',
     padding: 15,

@@ -51,7 +51,7 @@ const ReportSubmit = ({ customer }) => {
       </View>
 
       <TextInput
-        placeholder="Extra today (L)"
+        placeholder="todays milk (L)"
         keyboardType="numeric"
         style={styles.input}
         value={extraToday}

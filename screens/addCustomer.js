@@ -14,16 +14,18 @@ import { Picker } from '@react-native-picker/picker';
 const AddCustomer = () => {
   const [areas, setAreas] = useState([]);
 
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    password: '',
-    address: '',
-    area_id: '',
-    daily_milk_needed: '',
-    extra_milk_if_needed: '',
-    milk_category: '', // new
-  });
+const [form, setForm] = useState({
+  name: '',
+  phone: '',
+  password: '',
+  address: '',
+  area_id: '',
+  daily_milk_needed: '',
+  extra_milk_if_needed: '',
+  milk_category: '',
+  delivery_time: '', // <-- new
+});
+
 
 
   const [errors, setErrors] = useState({});
@@ -54,6 +56,8 @@ const AddCustomer = () => {
       errs.daily_milk_needed = 'Must be a number.';
     if (form.extra_milk_if_needed && isNaN(Number(form.extra_milk_if_needed)))
       errs.extra_milk_if_needed = 'Must be a number.';
+    if (!form.delivery_time) errs.delivery_time = 'Please select delivery time.';
+
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -134,6 +138,16 @@ const AddCustomer = () => {
         ))}
       </Picker>
       {errors.area_id && <Text style={styles.error}>{errors.area_id}</Text>}
+<Text style={styles.label}>Preferred Delivery Time</Text>
+<Picker
+  selectedValue={form.delivery_time}
+  onValueChange={value => setForm({ ...form, delivery_time: value })}
+>
+  <Picker.Item label="Select Time" value="" />
+  <Picker.Item label="Morning" value="morning" />
+  <Picker.Item label="Evening" value="evening" />
+</Picker>
+{errors.delivery_time && <Text style={styles.error}>{errors.delivery_time}</Text>}
 
       <TextInput
         style={styles.input}

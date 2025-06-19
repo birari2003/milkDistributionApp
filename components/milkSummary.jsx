@@ -42,6 +42,11 @@ const MilkSummary = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Milk Distribution Summary</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Assigned & Returned Milk</Text>
+        <Text style={styles.detail}>Assigned Today: {summary.total_assigned_today} L</Text>
+        <Text style={styles.detail}>Returned Today: {summary.total_returned_today} L</Text>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Milk Distributed Today</Text>
@@ -57,11 +62,6 @@ const MilkSummary = () => {
         <Text style={styles.total}>Total: {summary.total_cow_tomorrow + summary.total_buffalo_tomorrow} L</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Assigned & Returned Milk</Text>
-        <Text style={styles.detail}>Assigned Today: {summary.total_assigned_today} L</Text>
-        <Text style={styles.detail}>Returned Today: {summary.total_returned_today} L</Text>
-      </View>
     </ScrollView>
   );
 };

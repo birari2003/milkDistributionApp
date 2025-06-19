@@ -13,9 +13,10 @@ router.post('/api/add-customer', async (req, res) => {
     daily_milk_needed,
     extra_milk_if_needed,
     milk_category,
+    delivery_time, // <-- New field
   } = req.body;
 
-  if (!name || !phone || !password || !address || !area_id || !milk_category) {
+  if (!name || !phone || !password || !address || !area_id || !milk_category || !delivery_time) {
     return res.status(400).json({ success: false, message: 'All required fields must be filled' });
   }
 
@@ -23,7 +24,7 @@ router.post('/api/add-customer', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.execute(
-      'INSERT INTO customer (name, phone, password, address, area_id, daily_milk_needed, extra_milk_if_needed, milk_category) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO customer (name, phone, password, address, area_id, daily_milk_needed, extra_milk_if_needed, milk_category, delivery_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name,
         phone,
@@ -33,6 +34,7 @@ router.post('/api/add-customer', async (req, res) => {
         daily_milk_needed || 0,
         extra_milk_if_needed || 0,
         milk_category,
+        delivery_time, // <-- Pass to DB
       ]
     );
 
@@ -45,6 +47,7 @@ router.post('/api/add-customer', async (req, res) => {
 
 
 
+
 router.get('/api/customers', (req, res) => {
   const areaId = req.query.area_id;
 
@@ -53,7 +56,7 @@ router.get('/api/customers', (req, res) => {
   }
 
   const query = `
-    SELECT id, name, phone, address
+    SELECT id, name, phone, address, delivery_time
     FROM customer
     WHERE status = 'active' AND area_id = ?
   `;
@@ -69,11 +72,12 @@ router.get('/api/customers', (req, res) => {
 });
 
 
+
 router.put('/api/customer/:id', (req, res) => {
   const { id } = req.params;
   const { name, phone, daily_milk_needed, milk_category } = req.body;
 
-  console.log('Incoming PUT request:', { id, name, phone, daily_milk_needed, milk_category });
+  console.log('Incoming PUT request:', { id, name, phone, daily_milk_needed, milk_category,  });
 
   if (!name || !phone || !daily_milk_needed) { 
     return res.status(400).json({ success: false, message: 'Missing required fields' });

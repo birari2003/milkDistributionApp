@@ -12,7 +12,7 @@ import HomeScreen from '../screens/HomeScreen';
 import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
 import AreaScreen from '../screens/addArea';
 import DailyReport from '../screens/dailyReport';
-
+import AssignMilkScreen from './assignMilk';
 
 const Drawer = createDrawerNavigator();
 
@@ -43,20 +43,6 @@ const DrawerMenu = () => {
                 }}
             />
             <Drawer.Screen
-                name="Add Area"
-                component={AreaScreen}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
-                name="Add Employee"
-                component={AddEmployee}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
                 name="Daily Report"
                 component={DailyReport}
                 options={{
@@ -64,10 +50,32 @@ const DrawerMenu = () => {
                 }}
             />
             <Drawer.Screen
+                name="Assign Milk"
+                component={AssignMilkScreen}
+                options={{
+                    drawerIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} />,
+                }}
+            />
+            
+            <Drawer.Screen
+                name="Add Employee"
+                component={AddEmployee}
+                options={{
+                    drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+                }}
+            />  
+            <Drawer.Screen
                 name="Add Customer"
                 component={AddCustomer}
                 options={{
                     drawerIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} />,
+                }}
+            />
+            <Drawer.Screen
+                name="Add Area"
+                component={AreaScreen}
+                options={{
+                    drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
                 }}
             />
             <Drawer.Screen
