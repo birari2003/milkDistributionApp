@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomTabNavigator from './BottomTabNavigator';
 import AddEmployee from '../screens/ManageEmployees';
-import AddCustomer from '../screens/addCustomer';
+import AddCustomer from '../screens/addCustomerByOwner';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import HomeScreen from '../screens/HomeScreen';
 import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
