@@ -18,13 +18,22 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
-// const GENDERS = ['Male', 'Female'];
 
 export default function AddCustomer() {
   const [formVisible, setFormVisible] = useState(false);
-  const [customers, setCustomers] = useState([]);
   const [areas, setAreas] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+
+  const [filterTab, setFilterTab] = useState('region');
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  const [dropdowns, setDropdowns] = useState({
+    area: false,
+    employee: false,
+  });
 
   const [form, setForm] = useState({
     name: '',
@@ -33,17 +42,9 @@ export default function AddCustomer() {
     address: '',
     area_id: '',
     daily_milk_needed: '',
-    // extra_milk_if_needed: '',
     milk_category: [],
     delivery_time: '',
     employee_id: '',
-
-  });
-
-  const [dropdowns, setDropdowns] = useState({
-    gender: false,
-    area: false,
-    employee: false,
   });
 
   useEffect(() => {
@@ -58,12 +59,38 @@ export default function AddCustomer() {
       .then(data => {
         if (data.success) setEmployees(data.employees);
       });
+
+    fetch('http://192.168.43.175:3000/api/customers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAllCustomers(data.customers);
+          setFilteredCustomers(data.customers);
+        }
+      });
   }, []);
+
+  const applyFilters = (region, employee) => {
+    const filtered = allCustomers.filter(c => {
+      const regionMatch = region ? c.area_name === region.landmark : true;
+      const employeeMatch = employee ? c.employee_name === employee.name : true;
+      return regionMatch && employeeMatch;
+    });
+    setFilteredCustomers(filtered);
+  };
+
+  const handleReset = () => {
+    setSelectedRegion(null);
+    setSelectedEmployee(null);
+    setFilteredCustomers(allCustomers);
+  };
 
   const handleAddCustomer = async () => {
     const requiredFields = ['name', 'phone', 'password', 'address', 'area_id', 'daily_milk_needed', 'milk_category', 'delivery_time'];
     for (let field of requiredFields) {
-      if (!form[field]) return alert('Please fill all required fields');
+      if (!form[field] || (Array.isArray(form[field]) && form[field].length === 0)) {
+        return alert('Please fill all required fields');
+      }
     }
 
     try {
@@ -77,21 +104,28 @@ export default function AddCustomer() {
         alert('Customer added');
         setFormVisible(false);
         setForm({
-          name: '', phone: '', password: '', address: '',
-          area_id: '', daily_milk_needed: '',
-          milk_category: '', delivery_time: ''
+          name: '',
+          phone: '',
+          password: '',
+          address: '',
+          area_id: '',
+          daily_milk_needed: '',
+          milk_category: [],
+          delivery_time: '',
+          employee_id: '',
         });
-      } else alert('Failed to add');
+      } else {
+        alert('Failed to add');
+      }
     } catch {
       alert('Server error');
     }
   };
 
-  // const CARD_WIDTH = width - 24;
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#f1f6fd" barStyle="dark-content" />
+
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.addBtn} onPress={() => setFormVisible(true)}>
           <MaterialIcons name="add" size={28} color="#2563eb" />
@@ -99,6 +133,74 @@ export default function AddCustomer() {
         </TouchableOpacity>
       </View>
 
+      {/* Filter Tabs */}
+      <View style={styles.filterTabs}>
+        <TouchableOpacity
+          style={[styles.tab, filterTab === 'region' && styles.activeTab]}
+          onPress={() => setFilterTab('region')}
+        >
+          <Text style={styles.tabText}>Region</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, filterTab === 'employee' && styles.activeTab]}
+          onPress={() => setFilterTab('employee')}
+        >
+          <Text style={styles.tabText}>Employee</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.resetBtn}
+          onPress={handleReset}
+        >
+          <Text style={styles.resetBtnText}>Reset</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Selected Filters */}
+      <View style={styles.selectedFilters}>
+        {selectedRegion && <Text>🗺️ Region: {selectedRegion.landmark}</Text>}
+        {selectedEmployee && <Text>👤 Employee: {selectedEmployee.name}</Text>}
+      </View>
+
+      {/* Dynamic Dropdown */}
+      <View style={styles.dropdownList}>
+        {(filterTab === 'region' ? areas : employees).map(item => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.dropdownItem}
+            onPress={() => {
+              if (filterTab === 'region') {
+                setSelectedRegion(item);
+                applyFilters(item, selectedEmployee);
+              } else {
+                setSelectedEmployee(item);
+                applyFilters(selectedRegion, item);
+              }
+            }}
+          >
+            <Text style={styles.dropdownText}>
+              {filterTab === 'region' ? item.landmark : item.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Customer List */}
+      <FlatList
+        data={filteredCustomers}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.phone}>{item.phone}</Text>
+            <Text style={styles.address}>{item.address}</Text>
+            <Text style={styles.deliveryTime}>Delivery: {item.delivery_time}</Text>
+            <Text style={styles.meta}>Area: {item.area_name}</Text>
+            <Text style={styles.meta}>Employee: {item.employee_name}</Text>
+          </View>
+        )}
+      />
+
+      {/* Add Customer Modal */}
       <Modal
         visible={formVisible}
         transparent
@@ -124,7 +226,7 @@ export default function AddCustomer() {
                 {dropdowns.area && (
                   <View style={styles.dropdownList}>
                     {areas.map(a => (
-                      <TouchableOpacity key={a.id} style={styles.dropdownItem} onPress={() => setForm({ ...form, area_id: a.id }) || setDropdowns({ ...dropdowns, area: false })}>
+                      <TouchableOpacity key={a.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, area_id: a.id }); setDropdowns({ ...dropdowns, area: false }); }}>
                         <Text style={styles.dropdownText}>{a.landmark}</Text>
                       </TouchableOpacity>
                     ))}
@@ -139,68 +241,37 @@ export default function AddCustomer() {
                 {dropdowns.employee && (
                   <View style={styles.dropdownList}>
                     {employees.map(e => (
-                      <TouchableOpacity key={e.id} style={styles.dropdownItem} onPress={() => setForm({ ...form, employee_id: e.id }) || setDropdowns({ ...dropdowns, employee: false })}>
+                      <TouchableOpacity key={e.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, employee_id: e.id }); setDropdowns({ ...dropdowns, employee: false }); }}>
                         <Text style={styles.dropdownText}>{e.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 )}
 
-                {/* Gender Dropdown */}
-                {/* <TouchableOpacity style={styles.dropdown} onPress={() => setDropdowns({ ...dropdowns, gender: !dropdowns.gender })}>
-                  <Text style={styles.dropdownText}>{form.gender}</Text>
-                  <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
-                </TouchableOpacity>
-                {dropdowns.gender && (
-                  <View style={styles.dropdownList}>
-                    {GENDERS.map(g => (
-                      <TouchableOpacity key={g} style={styles.dropdownItem} onPress={() => setForm({ ...form, gender: g }) || setDropdowns({ ...dropdowns, gender: false })}>
-                        <Text style={styles.dropdownText}>{g}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )} */}
-
                 <TextInput style={styles.input} placeholder="Delivery Time (Morning/Evening)" value={form.delivery_time} onChangeText={t => setForm({ ...form, delivery_time: t })} />
                 <TextInput style={styles.input} placeholder="Daily Milk Needed" keyboardType="numeric" value={form.daily_milk_needed} onChangeText={t => setForm({ ...form, daily_milk_needed: t })} />
-                {/* <TextInput style={styles.input} placeholder="Extra Milk If Needed" keyboardType="numeric" value={form.extra_milk_if_needed} onChangeText={t => setForm({ ...form, extra_milk_if_needed: t })} /> */}
+                
                 <Text style={styles.label}>Milk Category</Text>
                 <View style={styles.checkboxRow}>
-                  <TouchableOpacity
-                    style={styles.checkboxItem}
-                    onPress={() => {
-                      const current = form.milk_category;
-                      const updated = current.includes('cows')
-                        ? current.filter(cat => cat !== 'cows')
-                        : [...current, 'cows'];
-                      setForm({ ...form, milk_category: updated });
-                    }}
-                  >
-                    <MaterialIcons
-                      name={form.milk_category.includes('cows') ? 'check-box' : 'check-box-outline-blank'}
-                      size={22}
-                      color="#2563eb"
-                    />
-                    <Text style={styles.checkboxLabel}>Cow's Milk</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.checkboxItem}
-                    onPress={() => {
-                      const current = form.milk_category;
-                      const updated = current.includes('buffalo')
-                        ? current.filter(cat => cat !== 'buffalo')
-                        : [...current, 'buffalo'];
-                      setForm({ ...form, milk_category: updated });
-                    }}
-                  >
-                    <MaterialIcons
-                      name={form.milk_category.includes('buffalo') ? 'check-box' : 'check-box-outline-blank'}
-                      size={22}
-                      color="#2563eb"
-                    />
-                    <Text style={styles.checkboxLabel}>Buffalo's Milk</Text>
-                  </TouchableOpacity>
+                  {['cows', 'buffalo'].map(cat => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={styles.checkboxItem}
+                      onPress={() => {
+                        const updated = form.milk_category.includes(cat)
+                          ? form.milk_category.filter(c => c !== cat)
+                          : [...form.milk_category, cat];
+                        setForm({ ...form, milk_category: updated });
+                      }}
+                    >
+                      <MaterialIcons
+                        name={form.milk_category.includes(cat) ? 'check-box' : 'check-box-outline-blank'}
+                        size={22}
+                        color="#2563eb"
+                      />
+                      <Text style={styles.checkboxLabel}>{cat === 'cows' ? "Cow's Milk" : "Buffalo's Milk"}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
 
                 <TouchableOpacity style={styles.submitBtn} onPress={handleAddCustomer}>
@@ -215,12 +286,118 @@ export default function AddCustomer() {
   );
 }
 
+// You can plug your existing `styles` object here or ask for it if needed
+
+
 const styles = StyleSheet.create({
+
+    safeArea: { flex: 1, backgroundColor: '#f1f6fd' },
+  headerRow: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e3ecfb',
+    padding: 10,
+    borderRadius: 10,
+  },
+  addBtnText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginVertical: 10,
+  },
+  tab: {
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderRadius: 20,
+    borderColor: '#2563eb',
+    backgroundColor: '#fff',
+  },
+  activeTab: {
+    backgroundColor: '#2563eb',
+  },
+  tabText: {
+    color: '#2563eb',
+    fontWeight: 'bold',
+  },
+  resetBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    backgroundColor: '#e74c3c',
+    borderRadius: 20,
+  },
+  resetBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  selectedFilters: {
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 4,
+  },
+  dropdownList: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginBottom: 10,
+  },
+  dropdownItem: {
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderColor: '#ccc',
+  },
+  dropdownText: {
+    fontSize: 15,
+    color: '#333',
+  },
+  card: {
+    backgroundColor: '#fff',
+    margin: 12,
+    padding: 14,
+    borderRadius: 10,
+    elevation: 3,
+  },
+  name: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
+  phone: { fontSize: 14, color: '#555' },
+  address: { fontSize: 14, color: '#777' },
+  deliveryTime: { fontSize: 14, color: '#333', marginTop: 6 },
+  meta: { fontSize: 13, color: '#888', marginTop: 2 },
   checkboxRow: {
     flexDirection: 'row',
     gap: 20,
     marginBottom: 12,
   },
+  tab: {
+  padding: 10,
+  marginHorizontal: 5,
+  borderRadius: 6,
+  backgroundColor: '#e0e0e0',
+},
+activeTab: {
+  backgroundColor: '#2563eb',
+},
+tabText: {
+  color: '#fff',
+  fontWeight: 'bold',
+},
+meta: {
+  fontSize: 13,
+  color: '#666',
+  marginTop: 2,
+},
+
   checkboxItem: {
     flexDirection: 'row',
     alignItems: 'center',
