@@ -49,19 +49,28 @@ router.post('/api/add-customer', async (req, res) => {
 
 
 router.get('/api/customers', (req, res) => {
-  const areaId = req.query.area_id;
+  const { area_id, employee_id } = req.query;
 
-  if (!areaId) {
-    return res.status(400).json({ success: false, message: 'area_id is required' });
+  let query = `
+    SELECT c.id, c.name, c.phone, c.address, c.delivery_time,
+           a.landmark AS area_name,
+           e.name AS employee_name
+    FROM customer c
+    JOIN area a ON c.area_id = a.id
+    JOIN employees e ON a.id = e.area_id
+    WHERE c.status = 'active'
+  `;
+  const params = [];
+
+  if (area_id) {
+    query += ' AND c.area_id = ?';
+    params.push(area_id);
+  } else if (employee_id) {
+    query += ' AND e.id = ?';
+    params.push(employee_id);
   }
 
-  const query = `
-    SELECT id, name, phone, address, delivery_time
-    FROM customer
-    WHERE status = 'active' AND area_id = ?
-  `;
-
-  db.query(query, [areaId], (err, results) => {
+  db.query(query, params, (err, results) => {
     if (err) {
       console.error('Error fetching customers:', err);
       return res.status(500).json({ success: false, message: 'DB error' });
@@ -70,6 +79,7 @@ router.get('/api/customers', (req, res) => {
     res.json({ success: true, customers: results });
   });
 });
+
 
 
 
