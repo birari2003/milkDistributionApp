@@ -4,77 +4,45 @@ import { View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomTabNavigator from './BottomTabNavigator';
-// import ManageCustomers from '../screens/ManageCustomers';
-import PaymentsScreen from '../screens/PaymentsScreen';
-import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
-import AreaScreen from '../screens/addArea';
+import EmployeeDashboard from '../screens/EmployeeDashboard';
 import AddCustomer from '../screens/addCustomer';
 import SeeCustomer from '../screens/seeCustomer';
-
+import AreaScreen from '../screens/addArea';
+import PaymentsScreen from '../screens/PaymentsScreen';
+import { AuthContext } from '../App';
 
 const Drawer = createDrawerNavigator();
 
 const DrawerMenuEmployee = () => {
- const { setRole } = useContext(AuthContext);
+  const { setRole } = useContext(AuthContext);
 
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('owner');
-        await AsyncStorage.removeItem('role');
-        setRole(null); // This will trigger re-render and go back to login
-    };
-
+  const handleLogout = async () => {
+    await AsyncStorage.multiRemove(['token', 'owner', 'role']);
+    setRole(null);
+  };
 
   return (
-    <Drawer.Navigator screenOptions={{ headerShown: true }}>
+    <Drawer.Navigator initialRouteName="EmployeeDashboard" screenOptions={{ headerShown: true }}>
       <Drawer.Screen
-        name="Dashboard"
-        component={BottomTabNavigator}
+        name="EmployeeDashboard"
+        component={EmployeeDashboard}
         options={{
+          title: 'Dashboard',
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
-
-      <Drawer.Screen
-        name="Manage Customers"
-        component={AddCustomer}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="See Customers"
-        component={SeeCustomer}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="Add Area"
-        component={AreaScreen}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-
-      {/* <Drawer.Screen
-        name="Manage Customers"
-        component={ManageCustomers}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
-        }}
-      /> */}
-      <Drawer.Screen
-        name="Payments"
-        component={PaymentsScreen}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
-        }}
-      />
-      {/* Custom logout button below drawer menu */}
+      <Drawer.Screen name="Manage Customers" component={AddCustomer} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+      }} />
+      <Drawer.Screen name="See Customers" component={SeeCustomer} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="eye-outline" size={size} color={color} />,
+      }} />
+      <Drawer.Screen name="Add Area" component={AreaScreen} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="map-outline" size={size} color={color} />,
+      }} />
+      <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
+      }} />
       <Drawer.Screen
         name="Logout"
         component={() => (
@@ -86,7 +54,6 @@ const DrawerMenuEmployee = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
         }}
       />
-      {/* Add more screens as needed */}
     </Drawer.Navigator>
   );
 };

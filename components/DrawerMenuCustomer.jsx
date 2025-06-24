@@ -3,46 +3,35 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import CustomerDashboard from '../screens/CustomerDashboard.js';
 
-import BottomTabNavigator from './BottomTabNavigator';
-// import ManageCustomers from '../screens/ManageCustomers';
+import seeCustomer from '../screens/seeCustomer';
 import PaymentsScreen from '../screens/PaymentsScreen';
-import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
-import AreaScreen from '../screens/addArea';
-import AddCustomer from '../screens/addCustomer';
-
+import { AuthContext } from '../App';
 
 const Drawer = createDrawerNavigator();
 
 const DrawerMenuCustomer = () => {
- const { setRole } = useContext(AuthContext);
+  const { setRole } = useContext(AuthContext);
 
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('owner');
-        await AsyncStorage.removeItem('role');
-        setRole(null); // This will trigger re-render and go back to login
-    };
-
+  const handleLogout = async () => {
+    await AsyncStorage.multiRemove(['token', 'owner', 'role']);
+    setRole(null);
+  };
 
   return (
-    <Drawer.Navigator screenOptions={{ headerShown: true }}>
+    <Drawer.Navigator initialRouteName="CustomerDashboard" screenOptions={{ headerShown: true }}>
       <Drawer.Screen
-        name="Dashboard"
-        component={BottomTabNavigator}
+        name="CustomerDashboard"
+        component={CustomerDashboard}
         options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+          title: 'Dashboard',
+          drawerIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
-
-      <Drawer.Screen
-        name="Payments"
-        component={PaymentsScreen}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
-        }}
-      />
-      {/* Custom logout button below drawer menu */}
+      <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
+      }} />
       <Drawer.Screen
         name="Logout"
         component={() => (
@@ -54,7 +43,6 @@ const DrawerMenuCustomer = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
         }}
       />
-      {/* Add more screens as needed */}
     </Drawer.Navigator>
   );
 };

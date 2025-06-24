@@ -47,7 +47,6 @@ router.post('/api/add-customer', async (req, res) => {
 
 
 
-
 router.get('/api/customers', (req, res) => {
   const { area_id, employee_id } = req.query;
 

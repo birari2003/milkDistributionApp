@@ -32,18 +32,18 @@ router.post('/api/owner/signup', async (req, res) => {
 router.post('/api/assign-milk', async (req, res) => {
   const {
     id,
-    assigned_milk_today,
-    assigned_extra_milk_today,
     cow_milk,
     buffalo_milk,
+    extra_cow_milk,
+    extra_buffalo_milk
   } = req.body;
 
   if (
     !id ||
-    assigned_milk_today == null ||
-    assigned_extra_milk_today == null ||
     cow_milk == null ||
-    buffalo_milk == null
+    buffalo_milk == null ||
+    extra_cow_milk == null ||
+    extra_buffalo_milk == null
   ) {
     return res.status(400).json({ success: false, message: 'All fields are required.' });
   }
@@ -51,13 +51,13 @@ router.post('/api/assign-milk', async (req, res) => {
   try {
     await db.execute(
       `UPDATE employees SET 
-        assigned_milk_today = ?, 
-        assigned_extra_milk_today = ?, 
         cow_milk = ?, 
         buffalo_milk = ?, 
+        extra_cow_milk = ?, 
+        extra_buffalo_milk = ?, 
         assigned_date = CURDATE() 
       WHERE id = ?`,
-      [assigned_milk_today, assigned_extra_milk_today, cow_milk, buffalo_milk, id]
+      [cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk, id]
     );
 
     res.json({ success: true, message: 'Milk assigned successfully.' });
@@ -66,5 +66,6 @@ router.post('/api/assign-milk', async (req, res) => {
     res.status(500).json({ success: false, message: 'Database error.' });
   }
 });
+
 
 export default router;

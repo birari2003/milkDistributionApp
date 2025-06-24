@@ -4,102 +4,127 @@ import { View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomTabNavigator from './BottomTabNavigator';
+import OwnerDashboard from '../screens/OwnerDashboard';
 import AddEmployee from '../screens/ManageEmployees';
 import AddCustomer from '../screens/addCustomerByOwner';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import HomeScreen from '../screens/HomeScreen';
-import { AuthContext } from '../App'; // Make sure AuthContext is exported correctly
 import AreaScreen from '../screens/addArea';
 import DailyReport from '../screens/dailyReport';
 import AssignMilkScreen from './assignMilk';
+import { AuthContext } from '../App';
 
 const Drawer = createDrawerNavigator();
 
 const DrawerMenu = () => {
-    const { setRole } = useContext(AuthContext);
+  const { setRole } = useContext(AuthContext);
 
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('owner');
-        await AsyncStorage.removeItem('role');
-        setRole(null); // This will trigger re-render and go back to login
-    };
+  const handleLogout = async () => {
+    await AsyncStorage.multiRemove(['token', 'owner', 'role']);
+    setRole(null);
+  };
 
-    return (
-        <Drawer.Navigator screenOptions={{ headerShown: true }}>
-            <Drawer.Screen
-                name="Dashboard"
-                component={BottomTabNavigator}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
-                name="HomeScreen"
-                component={HomeScreen}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
-                name="Daily Report"
-                component={DailyReport}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
-                name="Assign Milk"
-                component={AssignMilkScreen}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} />,
-                }}
-            />
-            
-            <Drawer.Screen
-                name="Add Employee"
-                component={AddEmployee}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
-                }}
-            />  
-            <Drawer.Screen
-                name="Add Customer"
-                component={AddCustomer}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
-                name="Add Area"
-                component={AreaScreen}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-                }}
-            />
-            <Drawer.Screen
-                name="Payments"
-                component={PaymentsScreen}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
-                }}
-            />
-            {/* Custom logout button below drawer menu */}
-            <Drawer.Screen
-                name="Logout"
-                component={() => (
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <Button title="Logout" onPress={handleLogout} />
-                    </View>
-                )}
-                options={{
-                    drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
-                }}
-            />
-            {/* Add more screens as needed */}
-        </Drawer.Navigator>
-    );
+  const commonHeaderOptions = {
+    headerStyle: {
+      backgroundColor: '#1e40af', // Deep blue
+    },
+    headerTintColor: '#fff',
+    headerTitleAlign: 'center',
+    headerTitleStyle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      letterSpacing: 1,
+    },
+  };
+
+  return (
+    <Drawer.Navigator
+      initialRouteName="OwnerDashboard"
+      screenOptions={{
+        drawerActiveTintColor: '#1e40af',
+        drawerLabelStyle: { fontSize: 16 },
+        ...commonHeaderOptions,
+      }}
+    >
+      <Drawer.Screen
+        name="OwnerDashboard"
+        component={OwnerDashboard}
+        options={{
+          title: 'Owner Panel',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Add Employee"
+        component={AddEmployee}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Add Customer"
+        component={AddCustomer}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="person-add-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Daily Report"
+        component={DailyReport}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="document-text-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Assign Milk"
+        component={AssignMilkScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="flask-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Add Area"
+        component={AreaScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="map-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Payments"
+        component={PaymentsScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Logout"
+        component={() => (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Button title="Logout" onPress={handleLogout} color="#ef4444" />
+          </View>
+        )}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="log-out-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Drawer.Navigator>
+  );
 };
 
 export default DrawerMenu;

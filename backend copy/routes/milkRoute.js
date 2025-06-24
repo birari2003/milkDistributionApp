@@ -152,9 +152,8 @@ router.post('/api/milk-report', (req, res) => {
 
 
 router.get('/api/milk-summary', (req, res) => {
-  const sql = `
+  const mainSql = `
     SELECT
-      -- Distributed Today
       SUM(CASE WHEN got_today_cow = 1 THEN
         CASE WHEN extra_today > 0 THEN extra_today ELSE c.daily_milk_needed END
       ELSE 0 END) AS total_cow_today,
@@ -163,7 +162,6 @@ router.get('/api/milk-summary', (req, res) => {
         CASE WHEN extra_today > 0 THEN extra_today ELSE c.daily_milk_needed END
       ELSE 0 END) AS total_buffalo_today,
 
-      -- Will Distribute Tomorrow
       SUM(CASE WHEN will_get_tomorrow_cow = 1 THEN
         CASE WHEN extra_tomorrow > 0 THEN extra_tomorrow ELSE c.daily_milk_needed END
       ELSE 0 END) AS total_cow_tomorrow,
@@ -172,10 +170,8 @@ router.get('/api/milk-summary', (req, res) => {
         CASE WHEN extra_tomorrow > 0 THEN extra_tomorrow ELSE c.daily_milk_needed END
       ELSE 0 END) AS total_buffalo_tomorrow,
 
-      -- Total Assigned
       SUM(e.assigned_milk_today) AS total_assigned_today,
 
-      -- Returned
       SUM(e.assigned_milk_today) - 
       (
         SUM(CASE WHEN got_today_cow = 1 THEN
@@ -191,15 +187,125 @@ router.get('/api/milk-summary', (req, res) => {
     WHERE DATE(mr.created_at) = CURDATE();
   `;
 
-  db.query(sql, (err, results) => {
+  const employeeSql = `
+    SELECT 
+      e.id, e.name, e.contact, e.area_id, a.area_name AS area_name,
+      e.assigned_milk_today, e.cow_milk, e.buffalo_milk,
+      e.extra_cow_milk, e.extra_buffalo_milk, e.assigned_date,
+
+      -- Total milk distributed by this employee today
+      (
+        SELECT SUM(
+          CASE 
+            WHEN got_today_cow = 1 THEN 
+              CASE WHEN extra_today > 0 THEN extra_today ELSE c.daily_milk_needed END 
+            ELSE 0 
+          END +
+          CASE 
+            WHEN got_today_buffalo = 1 THEN 
+              CASE WHEN extra_today > 0 THEN extra_today ELSE c.daily_milk_needed END 
+            ELSE 0 
+          END
+        )
+        FROM milkreport mr
+        JOIN customer c ON mr.phone = c.phone
+        WHERE DATE(mr.created_at) = CURDATE()
+        AND c.area_id = e.area_id
+      ) AS milk_distributed_today,
+
+      (
+        e.assigned_milk_today - 
+        (
+          SELECT SUM(
+            CASE 
+              WHEN got_today_cow = 1 THEN 
+                CASE WHEN extra_today > 0 THEN extra_today ELSE c.daily_milk_needed END 
+              ELSE 0 
+            END +
+            CASE 
+              WHEN got_today_buffalo = 1 THEN 
+                CASE WHEN extra_today > 0 THEN extra_today ELSE c.daily_milk_needed END 
+              ELSE 0 
+            END
+          )
+          FROM milkreport mr
+          JOIN customer c ON mr.phone = c.phone
+          WHERE DATE(mr.created_at) = CURDATE()
+          AND c.area_id = e.area_id
+        )
+      ) AS milk_returned_today
+    FROM employees e
+    JOIN area a ON e.area_id = a.id
+    WHERE DATE(e.assigned_date) = CURDATE();
+  `;
+
+  db.query(mainSql, (err, summaryResult) => {
     if (err) {
       console.error('Milk Summary Error:', err);
       return res.status(500).json({ success: false, message: 'Database error' });
     }
 
-    res.json({ success: true, data: results[0] });
+    db.query(employeeSql, (err, employeeResult) => {
+      if (err) {
+        console.error('Employee Summary Error:', err);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      // Group employees by area_id
+      const regionMap = {};
+      let totalReturnedCow = 0;
+      let totalReturnedBuffalo = 0;
+
+      for (const emp of employeeResult) {
+        const areaId = emp.area_id;
+        if (!regionMap[areaId]) {
+          regionMap[areaId] = {
+            name: emp.area_name,
+            cow: 0,
+            buffalo: 0,
+            returnedCow: 0,
+            returnedBuffalo: 0,
+            employees: [],
+          };
+        }
+
+        regionMap[areaId].cow += emp.cow_milk || 0;
+        regionMap[areaId].buffalo += emp.buffalo_milk || 0;
+        regionMap[areaId].returnedCow += emp.extra_cow_milk || 0;
+        regionMap[areaId].returnedBuffalo += emp.extra_buffalo_milk || 0;
+
+        totalReturnedCow += emp.extra_cow_milk || 0;
+        totalReturnedBuffalo += emp.extra_buffalo_milk || 0;
+
+        regionMap[areaId].employees.push({
+          name: emp.name,
+          phone: emp.phone,
+          cow: emp.cow_milk || 0,
+          buffalo: emp.buffalo_milk || 0,
+          returnedCow: emp.extra_cow_milk || 0,
+          returnedBuffalo: emp.extra_buffalo_milk || 0,
+        });
+      }
+
+      const regionArray = Object.values(regionMap);
+
+      res.json({
+        success: true,
+        data: {
+          ...summaryResult[0],
+          employee_count_today: employeeResult.length,
+          employees: employeeResult,
+          region_wise: regionArray,
+          returned: {
+            cow: totalReturnedCow,
+            buffalo: totalReturnedBuffalo
+          }
+        },
+      });
+    });
   });
 });
+
 
 
 
@@ -208,6 +314,7 @@ router.get('/api/area-wise-report', (req, res) => {
     SELECT
       a.landmark AS area_name,
       e.name AS employee_name,
+      e.id AS employee_id, 
       
       -- Assigned
       e.assigned_milk_today,

@@ -44,7 +44,6 @@ router.get('/api/employees', (req, res) => {
 
  
 // Assuming you already have db = mysql.createConnection(...)
-
 router.post('/api/update-employee', (req, res) => {
   const { id, name, contact, address, password, area_id, status } = req.body;
 
