@@ -35,12 +35,12 @@ const RegionWise = ({
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
           <MaterialCommunityIcons name="cow" size={16} color="#22c55e" />
-          <Text style={regionStyles.regionLabel}>Received Cow : </Text>
+          <Text style={regionStyles.regionLabel}>Returned Cow Milk : </Text>
           <Text style={regionStyles.regionReturnedValue}>{item.returnedCow} L</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
           <MaterialCommunityIcons name="cow" size={16} color="#facc15" />
-          <Text style={regionStyles.regionLabel}>Received Buffalo : </Text>
+          <Text style={regionStyles.regionLabel}>Returned Buffalo Milk: </Text>
           <Text style={regionStyles.regionReturnedValueBuffalo}>{item.returnedBuffalo} L</Text>
         </View>
       </View>
@@ -89,7 +89,7 @@ const RegionWise = ({
                 renderItem={({ item }) => <RegionListItem item={item} />}
                 ListFooterComponent={
                   <Text style={regionStyles.regionTotalReturned}>
-                    <MaterialCommunityIcons name="undo" size={16} color="#2563eb" /> Total Received:
+                    <MaterialCommunityIcons name="undo" size={16} color="#2563eb" /> Total Returned:
                     <Text style={{ color: '#22c55e' }}> Cow: {data.returned.cow} L</Text>
                     <Text style={{ color: '#facc15' }}>  Buffalo: {data.returned.buffalo} L</Text>
                   </Text>

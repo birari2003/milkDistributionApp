@@ -205,3 +205,396 @@ const styles = StyleSheet.create({
 });
 
 export default SeeCustomer;
+
+
+
+// import {
+//   View,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   StyleSheet,
+//   SafeAreaView,
+//   ScrollView,
+//   Dimensions,
+//   Platform,
+// } from 'react-native';
+// import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+// import { useState } from 'react';
+// const { width } = Dimensions.get('window');
+
+// const customers = [
+//   { id: 1, name: 'Amit Kumar', phone: '9876543210', gender: 'male' },
+//   { id: 2, name: 'Priya Singh', phone: '9123456789', gender: 'female' },
+//   { id: 3, name: 'Rakesh Meena', phone: '9012345678', gender: 'male' },
+// ];
+
+// export default function MilkDeliveryScreen() {
+//   const [inputs, setInputs] = useState(
+//     customers.reduce((acc, c) => {
+//       acc[c.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
+//       return acc;
+//     }, {})
+//   );
+//   const [assigned, setAssigned] = useState(
+//     customers.reduce((acc, c) => {
+//       acc[c.id] = false;
+//       return acc;
+//     }, {})
+//   );
+//   const [showExtra, setShowExtra] = useState(
+//     customers.reduce((acc, c) => {
+//       acc[c.id] = false;
+//       return acc;
+//     }, {})
+//   );
+//   const [editing, setEditing] = useState(
+//     customers.reduce((acc, c) => {
+//       acc[c.id] = true;
+//       return acc;
+//     }, {})
+//   );
+//   const [error, setError] = useState(
+//     customers.reduce((acc, c) => {
+//       acc[c.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
+//       return acc;
+//     }, {})
+//   );
+
+//   const handleInputChange = (custId, type, value) => {
+//     let val = value.replace(/[^0-9]/g, '');
+//     if (val.length > 1 && val.startsWith('0')) val = val.replace(/^0+/, '');
+//     if (val !== '' && parseInt(val) > 100) {
+//       setInputs((prev) => ({
+//         ...prev,
+//         [custId]: { ...prev[custId], [type]: '' },
+//       }));
+//       setError((prev) => ({
+//         ...prev,
+//         [custId]: { ...prev[custId], [type]: 'Value exceeds above 100' },
+//       }));
+//     } else {
+//       setInputs((prev) => ({
+//         ...prev,
+//         [custId]: { ...prev[custId], [type]: val },
+//       }));
+//       setError((prev) => ({
+//         ...prev,
+//         [custId]: { ...prev[custId], [type]: '' },
+//       }));
+//     }
+//   };
+
+//   const handleAssign = (custId) => {
+//     setAssigned((prev) => ({
+//       ...prev,
+//       [custId]: true,
+//     }));
+//     setEditing((prev) => ({
+//       ...prev,
+//       [custId]: false,
+//     }));
+//   };
+
+//   const handleEdit = (custId) => {
+//     setEditing((prev) => ({
+//       ...prev,
+//       [custId]: true,
+//     }));
+//     setAssigned((prev) => ({
+//       ...prev,
+//       [custId]: false,
+//     }));
+//   };
+
+//   const getCardWidth = () => {
+//     if (width > 900) return 600;
+//     if (width > 600) return 420;
+//     if (width > 400) return 340;
+//     return width - 24;
+//   };
+
+//   return (
+//     <SafeAreaView style={styles.safeArea}>
+//       <ScrollView contentContainerStyle={styles.scrollContainer}>
+//         {customers.map((cust) => {
+//           const { cow, buffalo, extraCow, extraBuffalo } = inputs[cust.id];
+//           const custError = error[cust.id];
+
+//           return (
+//             <View key={cust.id} style={[styles.card, { width: getCardWidth(), alignSelf: 'center' }]}>
+//               <View style={styles.infoRow}>
+//                 {cust.gender === 'male' ? (
+//                   <FontAwesome5 name="male" size={22} color="#2563eb" style={{ marginRight: 8 }} />
+//                 ) : (
+//                   <FontAwesome5 name="female" size={22} color="#f43f5e" style={{ marginRight: 8 }} />
+//                 )}
+//                 <View style={{ flex: 1 }}>
+//                   <Text style={styles.name}>{cust.name}</Text>
+//                   <Text style={styles.phone}>
+//                     <MaterialIcons name="phone" size={15} color="#2563eb" />{' '}
+//                     <Text style={{ color: '#2563eb' }}>{cust.phone}</Text>
+//                   </Text>
+//                 </View>
+//               </View>
+//               {/* Inputs */}
+//               {assigned[cust.id] && !editing[cust.id] ? (
+//                 <View style={styles.assignedMsgRow}>
+//                   <Text style={styles.assignedMsg}>Milk Assigned</Text>
+//                   <TouchableOpacity
+//                     style={styles.editBtn}
+//                     onPress={() => handleEdit(cust.id)}
+//                   >
+//                     <MaterialIcons name="edit" size={22} color="#2563eb" />
+//                   </TouchableOpacity>
+//                 </View>
+//               ) : (
+//                 <>
+//                   <View style={styles.inputLabelRow}>
+//                     <View style={{ flex: 1, marginRight: 6 }}>
+//                       <Text style={styles.inputLabelCow}>Cow Milk (L)</Text>
+//                       <TextInput
+//                         style={styles.inputBox}
+//                         keyboardType="numeric"
+//                         value={cow}
+//                         onChangeText={(text) => handleInputChange(cust.id, 'cow', text)}
+//                         editable={editing[cust.id]}
+//                         maxLength={3}
+//                       />
+//                       {custError.cow ? (
+//                         <Text style={styles.errorMsg}>{custError.cow}</Text>
+//                       ) : null}
+//                     </View>
+//                     <View style={{ flex: 1, marginLeft: 6 }}>
+//                       <Text style={styles.inputLabelBuffalo}>Buffalo Milk (L)</Text>
+//                       <TextInput
+//                         style={[styles.inputBox, { borderColor: '#f43f5e' }]}
+//                         keyboardType="numeric"
+//                         value={buffalo}
+//                         onChangeText={(text) => handleInputChange(cust.id, 'buffalo', text)}
+//                         editable={editing[cust.id]}
+//                         maxLength={3}
+//                       />
+//                       {custError.buffalo ? (
+//                         <Text style={styles.errorMsg}>{custError.buffalo}</Text>
+//                       ) : null}
+//                     </View>
+//                   </View>
+//                   <TouchableOpacity
+//                     style={styles.extraBtn}
+//                     onPress={() =>
+//                       setShowExtra((prev) => ({
+//                         ...prev,
+//                         [cust.id]: !prev[cust.id],
+//                       }))
+//                     }
+//                   >
+//                     <Text style={styles.extraBtnText}>
+//                       {showExtra[cust.id] ? 'Hide Extra' : 'Extra'}
+//                     </Text>
+//                   </TouchableOpacity>
+//                   {showExtra[cust.id] && (
+//                     <View style={styles.inputLabelRow}>
+//                       <View style={{ flex: 1, marginRight: 6 }}>
+//                         <Text style={styles.inputLabelCow}>Extra Cow Milk (L)</Text>
+//                         <TextInput
+//                           style={styles.inputBox}
+//                           keyboardType="numeric"
+//                           value={extraCow}
+//                           onChangeText={(text) => handleInputChange(cust.id, 'extraCow', text)}
+//                           editable={editing[cust.id]}
+//                           maxLength={3}
+//                         />
+//                         {custError.extraCow ? (
+//                           <Text style={styles.errorMsg}>{custError.extraCow}</Text>
+//                         ) : null}
+//                       </View>
+//                       <View style={{ flex: 1, marginLeft: 6 }}>
+//                         <Text style={styles.inputLabelBuffalo}>Extra Buffalo Milk (L)</Text>
+//                         <TextInput
+//                           style={[styles.inputBox, { borderColor: '#f43f5e' }]}
+//                           keyboardType="numeric"
+//                           value={extraBuffalo}
+//                           onChangeText={(text) => handleInputChange(cust.id, 'extraBuffalo', text)}
+//                           editable={editing[cust.id]}
+//                           maxLength={3}
+//                         />
+//                         {custError.extraBuffalo ? (
+//                           <Text style={styles.errorMsg}>{custError.extraBuffalo}</Text>
+//                         ) : null}
+//                       </View>
+//                     </View>
+//                   )}
+//                   <View style={styles.actionRow}>
+//                     <TouchableOpacity
+//                       style={[
+//                         styles.assignBtn,
+//                         assigned[cust.id] && styles.assignedBtn,
+//                         (!inputs[cust.id].cow && !inputs[cust.id].buffalo) && styles.disabledBtn,
+//                       ]}
+//                       onPress={() => handleAssign(cust.id)}
+//                       disabled={
+//                         (!inputs[cust.id].cow && !inputs[cust.id].buffalo) ||
+//                         assigned[cust.id]
+//                       }
+//                     >
+//                       <Text style={[
+//                         styles.assignBtnText,
+//                         assigned[cust.id] && styles.assignedBtnText
+//                       ]}>
+//                         Assign
+//                       </Text>
+//                     </TouchableOpacity>
+//                   </View>
+//                 </>
+//               )}
+//             </View>
+//           );
+//         })}
+//       </ScrollView>
+//     </SafeAreaView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   safeArea: {
+//     flex: 1,
+//     backgroundColor: '#fff',
+//   },
+//   scrollContainer: {
+//     paddingVertical: 18,
+//     paddingBottom: 40,
+//     backgroundColor: '#fff',
+//     alignItems: 'center',
+//   },
+//   card: {
+//     backgroundColor: '#fff',
+//     borderRadius: 14,
+//     padding: 16,
+//     marginBottom: 18,
+//     elevation: 2,
+//     shadowColor: '#2563eb',
+//     shadowOpacity: 0.08,
+//     shadowRadius: 6,
+//     shadowOffset: { width: 0, height: 2 },
+//     borderWidth: 1,
+//     borderColor: '#e0e7ef',
+//   },
+//   infoRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 10,
+//   },
+//   name: {
+//     fontSize: 20,
+//     fontWeight: 'bold',
+//     color: '#111',
+//     marginBottom: 2,
+//   },
+//   phone: {
+//     fontSize: 14,
+//     color: '#2563eb',
+//     marginBottom: 2,
+//   },
+//   inputLabelRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     marginBottom: 10,
+//   },
+//   inputLabelCow: {
+//     color: '#8b5cf6',
+//     fontSize: 13,
+//     marginBottom: 2,
+//     fontWeight: 'bold',
+//   },
+//   inputLabelBuffalo: {
+//     color: '#f43f5e',
+//     fontSize: 13,
+//     marginBottom: 2,
+//     fontWeight: 'bold',
+//   },
+//   inputBox: {
+//     backgroundColor: '#f8fafc',
+//     borderRadius: 8,
+//     borderWidth: 1.5,
+//     borderColor: '#8b5cf6',
+//     color: '#111',
+//     fontSize: 15,
+//     paddingHorizontal: 10,
+//     paddingVertical: Platform.OS === 'ios' ? 10 : 7,
+//     width: '100%',
+//   },
+//   errorMsg: {
+//     color: '#f43f5e',
+//     fontSize: 12,
+//     marginTop: 2,
+//     marginLeft: 2,
+//   },
+//   extraBtn: {
+//     alignSelf: 'flex-start',
+//     marginBottom: 8,
+//     marginTop: -2,
+//     paddingHorizontal: 10,
+//     paddingVertical: 3,
+//     borderRadius: 6,
+//     backgroundColor: '#e0e7ef',
+//   },
+//   extraBtnText: {
+//     color: '#2563eb',
+//     fontWeight: 'bold',
+//     fontSize: 13,
+//   },
+//   actionRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginTop: 8,
+//   },
+//   assignBtn: {
+//     backgroundColor: '#2563eb',
+//     borderRadius: 8,
+//     paddingVertical: 11,
+//     alignItems: 'center',
+//     flex: 1,
+//   },
+//   assignBtnText: {
+//     color: '#fff',
+//     fontSize: 15,
+//     fontWeight: 'bold',
+//     letterSpacing: 1,
+//   },
+//   assignedBtn: {
+//     backgroundColor: '#22c55e',
+//   },
+//   assignedBtnText: {
+//     color: '#fff',
+//   },
+//   assignedMsgRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#22c55e',
+//     borderRadius: 8,
+//     height: 48,
+//     paddingHorizontal: 18,
+//     justifyContent: 'space-between',
+//     marginTop: 10,
+//     marginBottom: 10,
+//   },
+//   assignedMsg: {
+//     color: '#fff',
+//     fontWeight: 'bold',
+//     fontSize: 16,
+//   },
+//   disabledBtn: {
+//     backgroundColor: '#bcd7fa',
+//   },
+//   editBtn: {
+//     marginLeft: 10,
+//     padding: 7,
+//     borderRadius: 6,
+//     backgroundColor: '#e0e7ef',
+//     height: 34,
+//     width: 34,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+// });

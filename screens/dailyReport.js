@@ -9,58 +9,60 @@ import {
   StatusBar,
   useWindowDimensions,
 } from 'react-native';
+
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import RegionWise from '../components/RigionWise';
 const staticData = {
-  distribution: { total: 320, cow: 200, buffalo: 120 },
-  returned: { total: 20, cow: 12, buffalo: 8 },
-  tomorrow: { total: 350, cow: 220, buffalo: 130 },
+  distribution: { total: 5, cow: 5, buffalo: 0 },
+  returned: { total: 2, cow: 2, buffalo: 0 },
+  tomorrow: { total: 6, cow: 3, buffalo: 2 },
   regions: [
     {
-      name: 'North',
-      cow: 60,
-      buffalo: 30,
+      name: 'MIDC',
+      cow: 5,
+      buffalo: 0,
       returnedCow: 3,
-      returnedBuffalo: 2,
+      returnedBuffalo: 0,
       employees: [
-        { name: 'Amit', phone: '9876543210', cow: 30, buffalo: 15, returnedCow: 1, returnedBuffalo: 1 },
-        { name: 'Ravi', phone: '9876501234', cow: 30, buffalo: 15, returnedCow: 2, returnedBuffalo: 1 },
+        { name: 'Gaurav', phone: '9876543210', cow: 5, buffalo: 0, returnedCow: 1, returnedBuffalo: 1 },
+        // { name: 'Ravi', phone: '9876501234', cow: 30, buffalo: 15, returnedCow: 2, returnedBuffalo: 1 },
+      ],
+    },
+
+    {
+      name: 'Bavdhan',
+      cow: 0,
+      buffalo: 0,
+      returnedCow: 0,
+      returnedBuffalo: 0,
+      employees: [
+        { name: 'Aashish', phone: '9123456789', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
+        { name: 'Shubham', phone: '9123409876', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
       ],
     },
     {
-      name: 'South',
-      cow: 80,
-      buffalo: 40,
-      returnedCow: 4,
-      returnedBuffalo: 3,
+      name: 'Kothrud',
+      cow: 0,
+      buffalo: 0,
+      returnedCow: 0,
+      returnedBuffalo: 0,
       employees: [
-        { name: 'Priya', phone: '9123456789', cow: 40, buffalo: 20, returnedCow: 2, returnedBuffalo: 1 },
-        { name: 'Suman', phone: '9123409876', cow: 40, buffalo: 20, returnedCow: 2, returnedBuffalo: 2 },
-      ],
-    },
-    {
-      name: 'East',
-      cow: 60,
-      buffalo: 25,
-      returnedCow: 2,
-      returnedBuffalo: 2,
-      employees: [
-        { name: 'Sunil', phone: '9001234567', cow: 30, buffalo: 12, returnedCow: 1, returnedBuffalo: 1 },
-        { name: 'Meena', phone: '9007654321', cow: 30, buffalo: 13, returnedCow: 1, returnedBuffalo: 1 },
+        { name: 'Sujal', phone: '9001234567', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
+        // { name: 'Meena', phone: '9007654321', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
       ],
     },
     
-    {
-      name: 'West',
-      cow: 20,
-      buffalo: 25,
-      returnedCow: 1,
-      returnedBuffalo: 3,
-      employees: [
-        { name: 'Rakesh', phone: '9012345678', cow: 10, buffalo: 12, returnedCow: 0, returnedBuffalo: 2 },
-        { name: 'Seema', phone: '9012987654', cow: 10, buffalo: 13, returnedCow: 1, returnedBuffalo: 1 },
-      ],
-    },
+    // {
+    //   name: 'West',
+    //   cow: 20,
+    //   buffalo: 25,
+    //   returnedCow: 1,
+    //   returnedBuffalo: 3,
+    //   employees: [
+    //     { name: 'Rakesh', phone: '9012345678', cow: 10, buffalo: 12, returnedCow: 0, returnedBuffalo: 2 },
+    //     { name: 'Seema', phone: '9012987654', cow: 10, buffalo: 13, returnedCow: 1, returnedBuffalo: 1 },
+    //   ],
+    // },
   ],
 };
 
@@ -70,7 +72,7 @@ export default function OwnerInventory() {
 
   const { width, height } = useWindowDimensions();
   const modalWidth = width > 600 ? width * 0.7 : width * 0.95;
-  const modalHeight = height * 0.8;
+  const modalHeight = height * 0.8; 
 
   const openRegion = (region) => {
     setSelectedRegion(region);
@@ -123,7 +125,7 @@ export default function OwnerInventory() {
         {/* Distributed Milk */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitleBlack}>
-            <MaterialCommunityIcons name="calendar-today" size={20} color="#2563eb" /> Cow and Buffalo
+            <MaterialCommunityIcons name="calendar-today" size={20} color="#2563eb" /> Today's Distribution
           </Text>
           <Text style={styles.totalLiters}>{staticData.distribution.total} Liters</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
@@ -147,7 +149,7 @@ export default function OwnerInventory() {
         {/* Returned Milk */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitleBlack}>
-            <MaterialCommunityIcons name="undo" size={20} color="#2563eb" /> Received
+            <MaterialCommunityIcons name="undo" size={20} color="#2563eb" /> Returned Milk
           </Text>
           <Text style={styles.totalLiters}>{staticData.returned.total} Liters</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
@@ -171,7 +173,7 @@ export default function OwnerInventory() {
         {/* Tomorrow Milk */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitleBlack}>
-            <MaterialCommunityIcons name="calendar" size={20} color="#2563eb" /> Tomorrow
+            <MaterialCommunityIcons name="calendar" size={20} color="#2563eb" /> Tomorrow Distribution
           </Text>
           <Text style={styles.totalLiters}>{staticData.tomorrow.total} Liters</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'center' }}>

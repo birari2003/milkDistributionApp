@@ -31,7 +31,7 @@ router.post('/api/owner/signup', async (req, res) => {
 // POST: /api/assign-milk
 router.post('/api/assign-milk', async (req, res) => {
   const {
-    id,
+    id, // employee_id
     cow_milk,
     buffalo_milk,
     extra_cow_milk,
@@ -50,14 +50,10 @@ router.post('/api/assign-milk', async (req, res) => {
 
   try {
     await db.execute(
-      `UPDATE employees SET 
-        cow_milk = ?, 
-        buffalo_milk = ?, 
-        extra_cow_milk = ?, 
-        extra_buffalo_milk = ?, 
-        assigned_date = CURDATE() 
-      WHERE id = ?`,
-      [cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk, id]
+      `INSERT INTO assignmilk (
+        employee_id, assigned_date, cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk
+      ) VALUES (?,?,?,?,?,?)`,
+      [id, new Date(), cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk]
     );
 
     res.json({ success: true, message: 'Milk assigned successfully.' });
@@ -66,6 +62,20 @@ router.post('/api/assign-milk', async (req, res) => {
     res.status(500).json({ success: false, message: 'Database error.' });
   }
 });
+// Get today's assigned milk records
+router.get('/api/assigned-milk-today', async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT employee_id FROM assignmilk WHERE assigned_date = CURDATE()`
+    );
+    res.json({ success: true, assigned: rows });
+  } catch (err) {
+    console.error('Fetch assigned milk error:', err);
+    res.status(500).json({ success: false, message: 'Database error.' });
+  }
+});
+
+
 
 
 export default router;

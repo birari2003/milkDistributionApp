@@ -87,7 +87,7 @@ export default function AdminDashboard() {
           <Text style={styles.cardText}>Customers</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Add Area')}>
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Daily Report')}>
           <Icon name="inventory" size={24} color="#10b981" />
           <Text style={styles.cardText}>Milk Inventory</Text>
         </TouchableOpacity>

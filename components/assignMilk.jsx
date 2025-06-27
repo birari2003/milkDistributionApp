@@ -76,7 +76,7 @@ export default function AssignMilkScreen() {
   const handleInputChange = (empId, type, value) => {
     let val = value.replace(/[^0-9]/g, '');
     if (val.length > 1 && val.startsWith('0')) val = val.replace(/^0+/, '');
-    if (val !== '' && parseInt(val) > 100) {
+    if (val !== '' && parseInt(val) > 200) {
       setInputs(prev => ({
         ...prev,
         [empId]: { ...prev[empId], [type]: '' },

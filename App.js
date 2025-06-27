@@ -16,6 +16,7 @@ import AddCustomer from './screens/addCustomer';
 import DrawerMenuCustomer from './components/DrawerMenuCustomer';
 import seeCustomer from './screens/seeCustomer';
 import DailyReport from './screens/dailyReport';
+import EmpInventoryScreen from './screens/EmployeeInventory';
 
 export const AuthContext = createContext();
 
@@ -67,6 +68,7 @@ export default function App() {
           <Stack.Screen name="addCustomer" component={AddCustomer} />
           <Stack.Screen name="seeCustomer" component={seeCustomer} />
           <Stack.Screen name="DailyReport" component={DailyReport} />
+          <Stack.Screen name="EmpInventoryScreen" component={EmpInventoryScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthContext.Provider>

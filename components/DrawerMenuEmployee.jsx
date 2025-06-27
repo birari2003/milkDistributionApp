@@ -1,10 +1,11 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 import EmployeeDashboard from '../screens/EmployeeDashboard';
+import EmployeeInventoryScreen from '../screens/EmployeeInventory';
 import AddCustomer from '../screens/addCustomer';
 import SeeCustomer from '../screens/seeCustomer';
 import AreaScreen from '../screens/addArea';
@@ -27,12 +28,15 @@ const DrawerMenuEmployee = () => {
         name="EmployeeDashboard"
         component={EmployeeDashboard}
         options={{
-          title: 'Dashboard',
+          title: 'Employee Panel',
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen name="Manage Customers" component={AddCustomer} options={{
         drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+      }} />
+      <Drawer.Screen name="Employee Inventory" component={EmployeeInventoryScreen} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} />,
       }} />
       <Drawer.Screen name="See Customers" component={SeeCustomer} options={{
         drawerIcon: ({ color, size }) => <Ionicons name="eye-outline" size={size} color={color} />,
