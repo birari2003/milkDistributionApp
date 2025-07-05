@@ -9,47 +9,16 @@ import {
   TextInput,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const { width } = Dimensions.get('window');
-
-const assignedCustomers = [
-  {
-    id: 1,
-    name: 'Amit Kumar',
-    phone: '9876543210',
-    cowMilk: 20,
-    buffaloMilk: 0,
-  },
-  {
-    id: 2,
-    name: 'Priya Singh',
-    phone: '9123456789',
-    cowMilk: 0,
-    buffaloMilk: 15,
-  },
-  {
-    id: 3,
-    name: 'Rakesh Meena',
-    phone: '9012345678',
-    cowMilk: 10,
-    buffaloMilk: 5,
-  },
-];
-
-const notTakenCustomers = [
-  {
-    id: 4,
-    name: 'Sunita Sharma',
-    phone: '9876501234',
-  },
-  {
-    id: 5,
-    name: 'Manoj Verma',
-    phone: '9123409876',
-  },
-];
+const API_URL = 'http://192.168.43.175:3000/api/employee-customers-report';
+const LEFTOVER_API_URL = 'http://192.168.43.175:3000/api/employee-milk-leftover';
+const RETURN_API_URL = 'http://192.168.43.175:3000/api/return-milk';
 
 export default function EmpInventoryScreen() {
   const [activeTab, setActiveTab] = useState('return');
@@ -59,6 +28,62 @@ export default function EmpInventoryScreen() {
   const [returnError, setReturnError] = useState({ cow: '', buffalo: '' });
   const [milkReturned, setMilkReturned] = useState(false);
   const [editing, setEditing] = useState(true);
+  const [leftoverMilk, setLeftoverMilk] = useState({ cowLeft: 0, buffaloLeft: 0 });
+  const [assignedCustomers, setAssignedCustomers] = useState([]);
+  const [notTakenCustomers, setNotTakenCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [employeeId, setEmployeeId] = useState(null);
+
+  useEffect(() => {
+    const fetchEmployeeId = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        const user = JSON.parse(userStr);
+        if (user?.id) {
+          setEmployeeId(user.id);
+        } else {
+          alert('Employee ID not found');
+        }
+      } catch (err) {
+        console.error('Error fetching employee ID:', err);
+      }
+    };
+    fetchEmployeeId();
+  }, []);
+
+  useEffect(() => {
+    if (!employeeId) return;
+    setLoading(true);
+
+    fetch(`${API_URL}?emp_id=${employeeId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAssignedCustomers(data.assignedCustomers);
+          setNotTakenCustomers(data.notTakenCustomers);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('API error:', err);
+        setLoading(false);
+      });
+  }, [employeeId]);
+
+  const fetchLeftoverMilk = () => {
+    if (!employeeId) return;
+    fetch(`${LEFTOVER_API_URL}?emp_id=${employeeId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setLeftoverMilk({
+            cowLeft: data.cowLeft || 0,
+            buffaloLeft: data.buffaloLeft || 0,
+          });
+        }
+      })
+      .catch(err => console.error('Leftover API error:', err));
+  };
 
   const getCardWidth = () => {
     if (width > 900) return 600;
@@ -71,11 +96,11 @@ export default function EmpInventoryScreen() {
     let val = value.replace(/[^0-9]/g, '');
     if (val.length > 1 && val.startsWith('0')) val = val.replace(/^0+/, '');
     if (val !== '' && parseInt(val) > 100) {
-      setReturnInputs((prev) => ({ ...prev, [type]: '' }));
-      setReturnError((prev) => ({ ...prev, [type]: 'Value exceeds above 100' }));
+      setReturnInputs(prev => ({ ...prev, [type]: '' }));
+      setReturnError(prev => ({ ...prev, [type]: 'Value exceeds 100' }));
     } else {
-      setReturnInputs((prev) => ({ ...prev, [type]: val }));
-      setReturnError((prev) => ({ ...prev, [type]: '' }));
+      setReturnInputs(prev => ({ ...prev, [type]: val }));
+      setReturnError(prev => ({ ...prev, [type]: '' }));
     }
   };
 
@@ -85,52 +110,72 @@ export default function EmpInventoryScreen() {
     setMilkReturned(false);
     setEditing(true);
     setReturnModal(true);
+    fetchLeftoverMilk();
   };
 
-  const handleReturnMilk = () => {
-    setMilkReturned(true);
-    setEditing(false);
+  const handleReturnMilk = async () => {
+    if (!employeeId) return;
+
+    const payload = {
+      employee_id: employeeId,
+      returned_cow_milk: returnInputs.cow || 0,
+      returned_buffalo_milk: returnInputs.buffalo || 0,
+    };
+
+    try {
+      const response = await fetch(RETURN_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setMilkReturned(true);
+        setEditing(false);
+        alert('Milk return submitted successfully!');
+      } else {
+        alert('Failed to return milk. Please try again.');
+      }
+    } catch (err) {
+      console.error('Return milk error:', err);
+      alert('Error submitting milk return.');
+    }
   };
 
   const handleEditReturn = () => {
     setEditing(true);
     setMilkReturned(false);
   };
-
+  
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Blur overlay when modal open */}
       {returnModal && <View style={styles.blurOverlay} pointerEvents="auto" />}
-      {/* Tab Bar */}
       <View style={styles.tabBar}>
         <TouchableOpacity
-          style={[
-            styles.tabBtn,
-            activeTab === 'return' && styles.activeTabBtn,
-          ]}
+          style={[styles.tabBtn, activeTab === 'return' && styles.activeTabBtn]}
           onPress={handleReturnTabPress}
         >
-          <MaterialIcons name="undo" size={20} color={activeTab === 'return' ? "#fff" : "#2563eb"} style={{ marginRight: 8 }} />
+          <MaterialIcons
+            name="undo"
+            size={20}
+            color={activeTab === 'return' ? "#fff" : "#2563eb"}
+            style={{ marginRight: 8 }}
+          />
           <Text
-            style={[
-              styles.tabText,
-              activeTab === 'return' && styles.activeTabText,
-            ]}
+            style={[styles.tabText, activeTab === 'return' && styles.activeTabText]}
           >
             Return Milk
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Filter for customers not taken milk today */}
       <TouchableOpacity
         style={styles.filterBtn}
-        onPress={() => setShowNotTaken((prev) => !prev)}
+        onPress={() => setShowNotTaken(prev => !prev)}
       >
         <MaterialIcons name="filter-list" size={20} color="#2563eb" style={{ marginRight: 6 }} />
-        <Text style={styles.filterBtnText}>
-          Customers Not Taken Milk Today
-        </Text>
+        <Text style={styles.filterBtnText}>Customers Not Taken Milk Today</Text>
         <MaterialIcons
           name={showNotTaken ? "expand-less" : "expand-more"}
           size={20}
@@ -139,13 +184,12 @@ export default function EmpInventoryScreen() {
         />
       </TouchableOpacity>
 
-      {/* Show not taken customers list when toggled */}
       {showNotTaken && (
         <View style={styles.notTakenList}>
           {notTakenCustomers.length === 0 ? (
             <Text style={styles.notTakenEmpty}>All customers have taken milk today.</Text>
           ) : (
-            notTakenCustomers.map((cust) => (
+            notTakenCustomers.map(cust => (
               <View key={cust.id} style={styles.notTakenCard}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                   <FontAwesome5 name="user" size={16} color="#f43f5e" style={{ marginRight: 8 }} />
@@ -161,7 +205,6 @@ export default function EmpInventoryScreen() {
         </View>
       )}
 
-      {/* Customers Taken Milk with count */}
       <View style={styles.takenHeaderRow}>
         <Text style={styles.takenHeaderText}>
           Customers Taken Milk{' '}
@@ -171,46 +214,50 @@ export default function EmpInventoryScreen() {
         </Text>
       </View>
 
-      {/* List of customers */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {assignedCustomers.map((cust) => (
-          <View
-            key={cust.id}
-            style={[styles.card, { width: getCardWidth(), alignSelf: 'center' }]}
-          >
-            <View style={styles.rowBetween}>
-              <View style={styles.infoLeft}>
-                <View style={styles.infoRow}>
-                  <FontAwesome5 name="user" size={20} color="#2563eb" style={{ marginRight: 8 }} />
-                  <Text style={styles.name}>{cust.name}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 20 }} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {assignedCustomers.map(cust => (
+            <View
+              key={cust.id}
+              style={[styles.card, { width: getCardWidth(), alignSelf: 'center' }]}
+            >
+              <View style={styles.rowBetween}>
+                <View style={styles.infoLeft}>
+                  <View style={styles.infoRow}>
+                    <FontAwesome5 name="user" size={20} color="#2563eb" style={{ marginRight: 8 }} />
+                    <Text style={styles.name}>{cust.name}</Text>
+                  </View>
+                  <View style={styles.phoneRow}>
+                    <Text style={styles.phone}>
+                      <MaterialIcons name="phone" size={15} color="#2563eb" />{' '}
+                      <Text style={{ color: '#2563eb' }}>{cust.phone}</Text>
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.phoneRow}>
-                  <Text style={styles.phone}>
-                    <MaterialIcons name="phone" size={15} color="#2563eb" />{' '}
-                    <Text style={{ color: '#2563eb' }}>{cust.phone}</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.milkRight}>
-                <View style={styles.milkLine}>
-                  <MaterialIcons name="local-drink" size={18} color="#8b5cf6" />
-                  <Text style={styles.milkLabel}>Cow Milk : </Text>
-                  <Text style={[styles.milkValue, { color: '#8b5cf6', marginLeft: 2 }]}>
-                    {cust.cowMilk} L
-                  </Text>
-                </View>
-                <View style={styles.milkLine}>
-                  <MaterialIcons name="local-drink" size={18} color="#f43f5e" />
-                  <Text style={styles.milkLabel}>Buffalo Milk : </Text>
-                  <Text style={[styles.milkValue, { color: '#f43f5e', marginLeft: 2 }]}>
-                    {cust.buffaloMilk} L
-                  </Text>
+                <View style={styles.milkRight}>
+                  <View style={styles.milkLine}>
+                    <MaterialIcons name="local-drink" size={18} color="#8b5cf6" />
+                    <Text style={styles.milkLabel}>Cow Milk : </Text>
+                    <Text style={[styles.milkValue, { color: '#8b5cf6', marginLeft: 2 }]}>
+                      {cust.cowMilk} L
+                    </Text>
+                  </View>
+                  <View style={styles.milkLine}>
+                    <MaterialIcons name="local-drink" size={18} color="#f43f5e" />
+                    <Text style={styles.milkLabel}>Buffalo Milk : </Text>
+                    <Text style={[styles.milkValue, { color: '#f43f5e', marginLeft: 2 }]}>
+                      {cust.buffaloMilk} L
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
+
       {/* Return Milk Modal */}
       <Modal
         visible={returnModal}
@@ -226,24 +273,25 @@ export default function EmpInventoryScreen() {
                 <MaterialIcons name="close" size={24} color="#222" />
               </Pressable>
             </View>
-            {/* Always show input boxes, make them non-editable if not editing */}
+
+            <View style={{ marginBottom: 10 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>Milk Left to Return:</Text>
+              <Text style={{ color: '#4b5563', marginBottom: 2 }}>Cow Milk: {leftoverMilk.cowLeft} L</Text>
+              <Text style={{ color: '#4b5563' }}>Buffalo Milk: {leftoverMilk.buffaloLeft} L</Text>
+            </View>
+
             <View style={styles.inputLabelRow}>
               <View style={{ flex: 1, marginRight: 6 }}>
                 <Text style={styles.inputLabelCow}>Cow Milk (L)</Text>
                 <TextInput
-                  style={[
-                    styles.inputBox,
-                    !editing && { backgroundColor: '#e7fbe9' },
-                  ]}
+                  style={[styles.inputBox, !editing && { backgroundColor: '#e7fbe9' }]}
                   keyboardType="numeric"
                   value={returnInputs.cow}
-                  onChangeText={(text) => handleReturnInputChange('cow', text)}
+                  onChangeText={text => handleReturnInputChange('cow', text)}
                   editable={editing}
                   maxLength={3}
                 />
-                {returnError.cow ? (
-                  <Text style={styles.errorMsg}>{returnError.cow}</Text>
-                ) : null}
+                {returnError.cow ? <Text style={styles.errorMsg}>{returnError.cow}</Text> : null}
               </View>
               <View style={{ flex: 1, marginLeft: 6 }}>
                 <Text style={styles.inputLabelBuffalo}>Buffalo Milk (L)</Text>
@@ -255,15 +303,14 @@ export default function EmpInventoryScreen() {
                   ]}
                   keyboardType="numeric"
                   value={returnInputs.buffalo}
-                  onChangeText={(text) => handleReturnInputChange('buffalo', text)}
+                  onChangeText={text => handleReturnInputChange('buffalo', text)}
                   editable={editing}
                   maxLength={3}
                 />
-                {returnError.buffalo ? (
-                  <Text style={styles.errorMsg}>{returnError.buffalo}</Text>
-                ) : null}
+                {returnError.buffalo ? <Text style={styles.errorMsg}>{returnError.buffalo}</Text> : null}
               </View>
             </View>
+
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={[
@@ -271,11 +318,7 @@ export default function EmpInventoryScreen() {
                   milkReturned && styles.returnedMsgRow,
                   (!returnInputs.cow && !returnInputs.buffalo) && styles.disabledBtn,
                 ]}
-                onPress={
-                  milkReturned
-                    ? undefined
-                    : handleReturnMilk
-                }
+                onPress={milkReturned ? undefined : handleReturnMilk}
                 disabled={
                   (!returnInputs.cow && !returnInputs.buffalo && !milkReturned) ||
                   (!editing && !milkReturned) ||
@@ -298,6 +341,7 @@ export default function EmpInventoryScreen() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {

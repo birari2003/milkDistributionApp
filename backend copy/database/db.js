@@ -5,13 +5,13 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '', 
-  database: 'milk_distribution'
+  database: 'milk_distribution_app'
 });
 
 db.connect(err => {
   if (err) {
     console.error('MySQL connection error:', err);
-    throw err;
+    throw err; 
   }
   console.log('✅ MySQL Connected');
 });

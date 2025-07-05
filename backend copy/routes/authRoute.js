@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 
 router.post('/api/login', async (req, res) => {
   const { phone, password } = req.body;
-
+ 
   if (!phone || !password) {
     return res.status(400).json({ success: false, message: 'Phone and password are required' });
   }
@@ -32,6 +32,7 @@ router.post('/api/login', async (req, res) => {
        WHERE e.contact = ?`,
       [phone]
     );
+    
     if (employees.length > 0) {
       const emp = employees[0];
       const match = await bcrypt.compare(password, emp.password);

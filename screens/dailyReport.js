@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,219 +6,221 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
+  Modal,
+  FlatList,
+  Pressable,
   useWindowDimensions,
 } from 'react-native';
-
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import RegionWise from '../components/RigionWise';
-const staticData = {
-  distribution: { total: 5, cow: 5, buffalo: 0 },
-  returned: { total: 2, cow: 2, buffalo: 0 },
-  tomorrow: { total: 6, cow: 3, buffalo: 2 },
-  regions: [
-    {
-      name: 'MIDC',
-      cow: 5,
-      buffalo: 0,
-      returnedCow: 3,
-      returnedBuffalo: 0,
-      employees: [
-        { name: 'Gaurav', phone: '9876543210', cow: 5, buffalo: 0, returnedCow: 1, returnedBuffalo: 1 },
-        // { name: 'Ravi', phone: '9876501234', cow: 30, buffalo: 15, returnedCow: 2, returnedBuffalo: 1 },
-      ],
-    },
+import React, { useEffect, useState } from 'react';
 
-    {
-      name: 'Bavdhan',
-      cow: 0,
-      buffalo: 0,
-      returnedCow: 0,
-      returnedBuffalo: 0,
-      employees: [
-        { name: 'Aashish', phone: '9123456789', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
-        { name: 'Shubham', phone: '9123409876', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
-      ],
-    },
-    {
-      name: 'Kothrud',
-      cow: 0,
-      buffalo: 0,
-      returnedCow: 0,
-      returnedBuffalo: 0,
-      employees: [
-        { name: 'Sujal', phone: '9001234567', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
-        // { name: 'Meena', phone: '9007654321', cow: 0, buffalo: 0, returnedCow: 0, returnedBuffalo: 0 },
-      ],
-    },
-    
-    // {
-    //   name: 'West',
-    //   cow: 20,
-    //   buffalo: 25,
-    //   returnedCow: 1,
-    //   returnedBuffalo: 3,
-    //   employees: [
-    //     { name: 'Rakesh', phone: '9012345678', cow: 10, buffalo: 12, returnedCow: 0, returnedBuffalo: 2 },
-    //     { name: 'Seema', phone: '9012987654', cow: 10, buffalo: 13, returnedCow: 1, returnedBuffalo: 1 },
-    //   ],
-    // },
-  ],
-};
-
-export default function OwnerInventory() {
-  const [regionModal, setRegionModal] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState(null);
-
+export default function OwnerInventory({ navigation }) {
+  const [summary, setSummary] = useState({ cow: 0, buffalo: 0, total: 0 });
+  const [returned, setReturned] = useState({ cow: 0, buffalo: 0, total: 0 });
+  const [employeeData, setEmployeeData] = useState([]);
+  const [tomorrowModal, setTomorrowModal] = useState(false);
   const { width, height } = useWindowDimensions();
   const modalWidth = width > 600 ? width * 0.7 : width * 0.95;
-  const modalHeight = height * 0.8; 
+  const modalHeight = height * 0.8;
 
-  const openRegion = (region) => {
-    setSelectedRegion(region);
-    setRegionModal(true);
+  const EMPLOYEE_IDS = [1, 2, 3, 4]; // static for now
+
+  useEffect(() => {
+    fetchSummary();
+    fetchReturned();
+    fetchEmployeeData();
+  }, []);
+
+  const fetchSummary = async () => {
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/owner-dashboard-summary');
+      const data = await res.json();
+      if (data.success) {
+        setSummary({ cow: data.total_cow_milk, buffalo: data.total_buffalo_milk, total: data.total });
+      }
+    } catch (err) {
+      console.error('Summary API error:', err);
+    }
   };
 
-  const MilkTypeBox = ({ label, value, color, borderColor, bgColor }) => {
-    const emojiMap = {
-      "Cow Milk": "🐄",
-      "Buffalo Milk": "🐃",
-    };
-
-    return (
-      <View
-        style={{
-          backgroundColor: bgColor,
-          borderColor: borderColor,
-          borderWidth: 1,
-          borderRadius: 12,
-          paddingVertical: 20,
-          paddingHorizontal: 20,
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 180,
-          marginHorizontal: 8,
-        }}
-      >
-        <Text style={{ fontSize: 40, marginBottom: 8 }}>
-          {emojiMap[label] || '🥛'}
-        </Text>
-        <Text style={{ fontSize: 16, fontWeight: '600', color, textAlign: 'center' }}>
-          {label}
-        </Text>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', color, marginTop: 4 }}>
-          {value}L
-        </Text>
-      </View>
-    );
+  const fetchReturned = async () => {
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/return-milk-summary');
+      const data = await res.json();
+      if (data.success) {
+        setReturned({ cow: data.returned_cow_milk, buffalo: data.returned_buffalo_milk, total: data.total });
+      }
+    } catch (err) {
+      console.error('Return API error:', err);
+    }
   };
+
+  const fetchEmployeeData = async () => {
+  try {
+    const res = await fetch('http://192.168.43.175:3000/api/employee-milk-summary-dash');
+    const data = await res.json();
+
+    if (data.success && Array.isArray(data.data)) {
+      const formatted = data.data.map(emp => ({
+        name: emp.employee_name,
+        phone: emp.employee_phone,
+        cow: emp.total_cow_milk,
+        buffalo: emp.total_buffalo_milk
+      }));
+      setEmployeeData(formatted);
+    } else {
+      console.error('Unexpected data structure from API');
+    }
+  } catch (err) {
+    console.error('Employee summary fetch error:', err);
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.headerBar}>
-          <MaterialCommunityIcons name="cup-water" size={28} color="#2563eb" />
-          <Text style={styles.headerTitle}>Milk Inventory</Text>
-        </View>
-
-        {/* Distributed Milk */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitleBlack}>
-            <MaterialCommunityIcons name="calendar-today" size={20} color="#2563eb" /> Today's Distribution
-          </Text>
-          <Text style={styles.totalLiters}>{staticData.distribution.total} Liters</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <MilkTypeBox
-              label="Cow Milk"
-              value={staticData.distribution.cow}
-              color="#22c55e"
-              borderColor="#22c55e"
-              bgColor="#f0fdf4"
-            />
-            <MilkTypeBox
-              label="Buffalo Milk"
-              value={staticData.distribution.buffalo}
-              color="#3b82f6"
-              borderColor="#3b82f6"
-              bgColor="#eff6ff"
-            />
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <MaterialCommunityIcons name="cup-water" size={28} color="#2563eb" />
+            <Text style={styles.headerTitle}>Milk Inventory</Text>
           </View>
-        </View>
-
-        {/* Returned Milk */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitleBlack}>
-            <MaterialCommunityIcons name="undo" size={20} color="#2563eb" /> Returned Milk
-          </Text>
-          <Text style={styles.totalLiters}>{staticData.returned.total} Liters</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <MilkTypeBox
-              label="Cow Milk"
-              value={staticData.returned.cow}
-              color="#22c55e"
-              borderColor="#22c55e"
-              bgColor="#f0fdf4"
-            />
-            <MilkTypeBox
-              label="Buffalo Milk"
-              value={staticData.returned.buffalo}
-              color="#facc15"
-              borderColor="#facc15"
-              bgColor="#fefce8"
-            />
-          </View>
-        </View>
-
-        {/* Tomorrow Milk */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitleBlack}>
-            <MaterialCommunityIcons name="calendar" size={20} color="#2563eb" /> Tomorrow Distribution
-          </Text>
-          <Text style={styles.totalLiters}>{staticData.tomorrow.total} Liters</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <MilkTypeBox
-              label="Cow Milk"
-              value={staticData.tomorrow.cow}
-              color="#22c55e"
-              borderColor="#22c55e"
-              bgColor="#f0fdf4"
-            />
-            <MilkTypeBox
-              label="Buffalo Milk"
-              value={staticData.tomorrow.buffalo}
-              color="#facc15"
-              borderColor="#facc15"
-              bgColor="#fefce8"
-            />
-          </View>
-        </View>
-
-        {/* Region Wise */}
-        <View style={styles.sectionCard}>
           <TouchableOpacity
-            style={styles.regionBtn}
-            onPress={() => setRegionModal(true)}
+            style={styles.reportsBtn}
+            onPress={() => navigation.navigate('Report')}
+            activeOpacity={0.8}
           >
-            <MaterialCommunityIcons name="map" size={22} color="#2563eb" />
-            <Text style={styles.regionBtnText}>Region Wise</Text>
+            <MaterialCommunityIcons name="file-chart" size={18} color="#fff" />
+            <Text style={styles.reportsBtnText}>REPORTS</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitleBlack}>
+            <MaterialCommunityIcons name="calendar-today" size={20} color="#2563eb" /> Cow and Buffalo
+          </Text>
+          <Text style={styles.totalLiters}>{summary.total} Liters</Text>
+          <View style={styles.milkRow}>
+            <View style={styles.milkTypeBox}>
+              <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+              <Text style={styles.milkTypeLabel}>Cow Milk</Text>
+              <Text style={styles.milkTypeValue}>{summary.cow} L</Text>
+            </View>
+            <View style={styles.milkTypeBox}>
+              <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+              <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
+              <Text style={styles.milkTypeValue}>{summary.buffalo} L</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitleBlack}>
+            <MaterialCommunityIcons name="undo" size={20} color="#2563eb" /> Returned
+          </Text>
+          <Text style={styles.totalLiters}>{returned.total} Liters</Text>
+          <View style={styles.milkRow}>
+            <View style={styles.milkTypeBox}>
+              <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+              <Text style={styles.milkTypeLabel}>Cow Milk</Text>
+              <Text style={styles.milkTypeValue}>{returned.cow} L</Text>
+            </View>
+            <View style={styles.milkTypeBox}>
+              <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+              <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
+              <Text style={styles.milkTypeValue}>{returned.buffalo} L</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <TouchableOpacity style={styles.tomorrowBtn} onPress={() => setTomorrowModal(true)}>
+            <MaterialCommunityIcons name="calendar" size={22} color="#2563eb" />
+            <Text style={styles.tomorrowBtnText}>Tomorrow</Text>
             <MaterialCommunityIcons name="chevron-right" size={18} color="#2563eb" />
           </TouchableOpacity>
+          <Text style={styles.totalLiters}>{employeeData.reduce((acc, e) => acc + e.cow + e.buffalo, 0)} Liters</Text>
+          <View style={styles.milkRow}>
+            <View style={styles.milkTypeBox}>
+              <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+              <Text style={styles.milkTypeLabel}>Cow Milk</Text>
+              <Text style={styles.milkTypeValue}>
+                {employeeData.reduce((acc, e) => acc + e.cow, 0)} L
+              </Text>
+            </View>
+            <View style={styles.milkTypeBox}>
+              <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+              <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
+              <Text style={styles.milkTypeValue}>
+                {employeeData.reduce((acc, e) => acc + e.buffalo, 0)} L
+              </Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
 
-      {/* Region Modal */}
-      <RegionWise
-        visible={regionModal}
-        onClose={() => {
-          setRegionModal(false);
-          setSelectedRegion(null);
-        }}
-        data={staticData}
-        selectedRegion={selectedRegion}
-        setSelectedRegion={setSelectedRegion}
-        openRegion={openRegion}
-        styles={styles}
-      />
+      <Modal visible={tomorrowModal} transparent animationType="slide" onRequestClose={() => setTomorrowModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setTomorrowModal(false)}>
+          <Pressable
+            style={[
+              styles.regionModalBox,
+              { width: modalWidth, height: modalHeight, maxHeight: modalHeight },
+            ]}
+            onPress={() => {}}
+          >
+            <Text style={styles.regionModalTitleBlack}>Tomorrow's Distribution</Text>
+            <View style={styles.milkRow}>
+              <View style={styles.milkTypeBox}>
+                <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+                <Text style={styles.milkTypeLabel}>Cow Milk</Text>
+                <Text style={styles.milkTypeValue}>
+                  {employeeData.reduce((acc, e) => acc + e.cow, 0)} L
+                </Text>
+              </View>
+              <View style={styles.milkTypeBox}>
+                <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+                <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
+                <Text style={styles.milkTypeValue}>
+                  {employeeData.reduce((acc, e) => acc + e.buffalo, 0)} L
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.regionEmpTitleBlack}>Employee Wise</Text>
+            <FlatList
+              data={employeeData}
+              keyExtractor={(item) => item.name}
+              renderItem={({ item }) => (
+                <View style={styles.empRow}>
+                  <MaterialCommunityIcons name="account" size={20} color="#2563eb" />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={styles.empName}>{item.name}</Text>
+                    <Text style={styles.empPhone}>
+                      <MaterialCommunityIcons name="phone" size={14} color="#60a5fa" /> {item.phone}
+                    </Text>
+                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                      <MaterialCommunityIcons name="cow" size={14} color="#22c55e" />
+                      <Text style={styles.empMilk}>Cow Milk: {item.cow} L</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                      <MaterialCommunityIcons name="cow" size={14} color="#facc15" />
+                      <Text style={styles.empMilk}>Buffalo Milk: {item.buffalo} L</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 10 }}
+            />
+            <TouchableOpacity
+              style={[styles.regionBtn, { marginTop: 10, alignSelf: 'center' }]}
+              onPress={() => setTomorrowModal(false)}
+            >
+              <Text style={styles.regionBtnText}>Close</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -230,46 +231,67 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   container: {
-    padding: 12,
+    padding: 16,
     paddingBottom: 30,
-    backgroundColor: '#fff',
   },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 18,
-    marginTop: 10,
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#2563eb',
-    marginLeft: 8,
+    marginLeft: 10,
   },
   sectionCard: {
     backgroundColor: '#f8fafc',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#2563eb',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 18,
+    elevation: 1,
   },
   sectionTitleBlack: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#222',
-    marginBottom: 4,
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   totalLiters: {
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0284c7',
+    marginBottom: 10,
+  },
+  milkRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  milkTypeBox: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginHorizontal: 6,
+    padding: 10,
+    elevation: 1,
+  },
+  milkTypeLabel: {
+    fontSize: 14,
+    color: '#64748b',
+    marginTop: 4,
+  },
+  milkTypeValue: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#2563eb',
-    marginBottom: 8,
+    marginTop: 2,
   },
-  regionBtn: {
+  tomorrowBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#e0e7ff',
@@ -277,12 +299,90 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  regionBtnText: {
+  tomorrowBtnText: {
     color: '#2563eb',
     fontWeight: 'bold',
     fontSize: 16,
     marginLeft: 8,
     marginRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  regionModalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 18,
+    elevation: 5,
+  },
+  regionModalTitleBlack: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  regionEmpTitleBlack: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#222',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  empRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  empName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  empPhone: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  empMilk: {
+    fontSize: 16,
+    color: '#222',
+    marginLeft: 6,
+  },
+  regionBtn: {
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    marginTop: 10,
+  },
+  regionBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  reportsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#a78bfa', // purple-400
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginLeft: 10,
+  },
+  reportsBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 6,
   },
 });

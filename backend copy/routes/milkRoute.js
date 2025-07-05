@@ -28,126 +28,176 @@ router.get('/api/areas', (req, res) => {
   });
 });
 
-router.post('/api/milk-report', (req, res) => {
+
+
+// Express route for POST /api/add-daily-report
+router.post('/api/add-daily-report', (req, res) => {
   const {
-    name,
-    phone,
-    address,
-    got_today_cow,
-    got_today_buffalo,
-    will_get_tomorrow_cow,
-    will_get_tomorrow_buffalo,
+    customer_id,
+    got_cow_milk_today,
+    got_buffalo_milk_today,
+    will_get_cow_milk_tomorrow,
+    will_get_buffalo_milk_tomorrow,
     extra_today,
-    extra_tomorrow
+    extra_tomorrow,
+    assigned_employee_id,
+    override = false, // optional flag to allow edit
   } = req.body;
 
-  if (!name || !phone || !address) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  if (!customer_id || !assigned_employee_id) {
+    return res.status(400).json({ success: false, message: 'Customer ID and Employee ID are required' });
   }
 
-  const areaQuery = `SELECT area_id FROM customer WHERE phone = ? LIMIT 1`;
+  const today = new Date().toISOString().slice(0, 10);
 
-  db.query(areaQuery, [phone], (err, results) => {
-    if (err) {
-      console.error('Error fetching area_id:', err);
-      return res.status(500).json({ success: false, message: 'Database error while fetching area_id' });
+  const checkQuery = `
+    SELECT id FROM daily_report
+    WHERE customer_id = ? AND DATE(created_at) = ?
+  `;
+
+  db.query(checkQuery, [customer_id, today], (checkErr, checkResults) => {
+    if (checkErr) {
+      console.error('Check query error:', checkErr);
+      return res.status(500).json({ success: false, message: 'Database error during check' });
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ success: false, message: 'Customer not found' });
-    }
-
-    const area_id = results[0].area_id;
-
-    const insertQuery = `
-      INSERT INTO milkreport 
-        (name, phone, address, got_today_cow, got_today_buffalo, will_get_tomorrow_cow, will_get_tomorrow_buffalo, extra_today, extra_tomorrow, area_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    db.query(insertQuery, [
-      name,
-      phone,
-      address,
-      got_today_cow ? 1 : 0,
-      got_today_buffalo ? 1 : 0,
-      will_get_tomorrow_cow ? 1 : 0,
-      will_get_tomorrow_buffalo ? 1 : 0,
-      extra_today,
-      extra_tomorrow,
-      area_id
-    ], (err, result) => {
-      if (err) {
-        console.error('Database insert error:', err);
-        return res.status(500).json({ success: false, message: 'Database error while inserting report' });
+    if (checkResults.length > 0) {
+      if (!override) {
+        return res.status(409).json({ success: false, message: 'Report already submitted for today', alreadySubmitted: true });
       }
 
-      res.json({ success: true, message: 'Report submitted successfully' });
+      // Update existing record
+      const updateQuery = `
+        UPDATE daily_report SET
+          got_cow_milk_today = ?,
+          got_buffalo_milk_today = ?,
+          will_get_cow_milk_tomorrow = ?,
+          will_get_buffalo_milk_tomorrow = ?,
+          extra_today = ?,
+          extra_tomorrow = ?,
+          assigned_employee_id = ?
+        WHERE id = ?
+      `;
+      const values = [
+        !!got_cow_milk_today,
+        !!got_buffalo_milk_today,
+        !!will_get_cow_milk_tomorrow,
+        !!will_get_buffalo_milk_tomorrow,
+        parseFloat(extra_today || 0),
+        parseFloat(extra_tomorrow || 0),
+        assigned_employee_id,
+        checkResults[0].id
+      ];
+
+      return db.query(updateQuery, values, (updateErr) => {
+        if (updateErr) {
+          console.error('Update error:', updateErr);
+          return res.status(500).json({ success: false, message: 'DB update failed' });
+        }
+
+        return res.json({ success: true, message: 'Report updated successfully' });
+      });
+    }
+
+    // Insert new entry
+    const insertQuery = `
+      INSERT INTO daily_report (
+        customer_id,
+        got_cow_milk_today,
+        got_buffalo_milk_today,
+        will_get_cow_milk_tomorrow,
+        will_get_buffalo_milk_tomorrow,
+        extra_today,
+        extra_tomorrow,
+        assigned_employee_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      customer_id,
+      !!got_cow_milk_today,
+      !!got_buffalo_milk_today,
+      !!will_get_cow_milk_tomorrow,
+      !!will_get_buffalo_milk_tomorrow,
+      parseFloat(extra_today || 0),
+      parseFloat(extra_tomorrow || 0),
+      assigned_employee_id,
+    ];
+
+    db.query(insertQuery, values, (insertErr) => {
+      if (insertErr) {
+        console.error('Insert error:', insertErr);
+        return res.status(500).json({ success: false, message: 'DB insert failed' });
+      }
+
+      res.json({ success: true, message: 'Report added successfully' });
     });
+  });
+});
+// This checks if report exists for today and customer_id
+router.get('/api/check-daily-report', (req, res) => {
+  const { customer_id } = req.query;
+
+  if (!customer_id) {
+    return res.status(400).json({ success: false, message: 'Customer ID required' });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const sql = `SELECT id FROM daily_report WHERE customer_id = ? AND DATE(created_at) = ?`;
+
+  db.query(sql, [customer_id, today], (err, results) => {
+    if (err) {
+      console.error('Check error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      return res.json({ success: true, exists: true });
+    } else {
+      return res.json({ success: true, exists: false });
+    }
   });
 });
 
 
 
 
-// router.get('/api/todays-milk-report', (req, res) => {
-//   const sql = `
-//     SELECT 
-//       e.name AS employee_name,
-//       e.contact AS employee_phone,
-//       a.landmark AS area_landmark,
-//       a.id AS area_id,
+router.get('/api/owner-employee-milk-distribution', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
 
-//       -- Date fields
-//       CURDATE() AS today_date,
-//       CURDATE() + INTERVAL 1 DAY AS tomorrow_date,
+  const sql = `
+    SELECT 
+      e.id AS employee_id,
+      e.name,
+      e.contact AS phone,
+      IFNULL(SUM(dr.got_cow_milk_today), 0) AS cow,
+      IFNULL(SUM(dr.got_buffalo_milk_today), 0) AS buffalo
+    FROM employees e
+    LEFT JOIN daily_report dr 
+      ON e.id = dr.assigned_employee_id AND DATE(dr.created_at) = ?
+    WHERE e.status = 'active'
+    GROUP BY e.id, e.name, e.contact
+  `;
 
-//       -- 1. Total customers who got milk today
-//       SUM(mr.got_today = 1) AS total_customers_today,
+  db.query(sql, [today], (err, results) => {
+    if (err) {
+      console.error('Distribution summary error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
 
-//       -- 2. Total customers who will get milk tomorrow
-//       SUM(mr.will_get_tomorrow = 1) AS total_customers_tomorrow,
+    const employees = results.map(row => ({
+      employee_id: row.employee_id,
+      name: row.name,
+      phone: row.phone,
+      cow: row.cow || 0,
+      buffalo: row.buffalo || 0,
+    }));
 
-//       -- 3. Total milk distributed today
-//       SUM(
-//         CASE 
-//           WHEN mr.got_today = 1 THEN 
-//             CASE 
-//               WHEN mr.extra_today > 0 THEN mr.extra_today 
-//               ELSE c.daily_milk_needed 
-//             END 
-//           ELSE 0 
-//         END
-//       ) AS total_milk_today,
+    res.json({ success: true, employees });
+  });
+});
 
-//       -- 4. Total milk required for tomorrow
-//       SUM(
-//         CASE 
-//           WHEN mr.will_get_tomorrow = 1 THEN 
-//             CASE 
-//               WHEN mr.extra_tomorrow > 0 THEN mr.extra_tomorrow 
-//               ELSE c.daily_milk_needed 
-//             END 
-//           ELSE 0 
-//         END
-//       ) AS total_milk_tomorrow
-
-//     FROM employees e
-//     JOIN area a ON a.id = e.area_id
-//     JOIN customer c ON c.area_id = a.id AND c.status = 'active'
-//     LEFT JOIN milkreport mr ON mr.phone = c.phone AND mr.area_id = a.id
-
-//     GROUP BY a.id;
-//   `;
-
-
-//   db.query(sql, (err, results) => {
-//     if (err) {
-//       console.error('Error fetching milk report:', err);
-//       return res.status(500).json({ success: false, message: 'Database error' });
-//     }
-//     res.json({ success: true, data: results });
-//   });
-// });
 
 
 

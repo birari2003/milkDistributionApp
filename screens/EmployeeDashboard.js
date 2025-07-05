@@ -1,56 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   ScrollView,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
-import { MaterialIcons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-// Example static values
-const totalReceived = 80;
-const cowMilk = 50;
-const buffaloMilk = 30;
+const cowPrice = 56;
+const buffaloPrice = 70;
 
-export default function EmployeeDashboard() {
+export default function EmployeeDashboard({ route }) {
+  const [total, setTotal] = useState(0);
+  const [cowMilk, setCowMilk] = useState(0);
+  const [buffaloMilk, setBuffaloMilk] = useState(0);
+
+  const employee_id = route?.params?.employee_id || 1;
+
+  useEffect(() => {
+    fetch('http://192.168.43.175:3000/api/employee-milk-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_id }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setCowMilk(data.cow);
+          setBuffaloMilk(data.buffalo);
+          setTotal(data.total);
+        }
+      })
+      .catch(err => console.error('Failed to load milk summary', err));
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      {/* <View style={styles.header}>
-        <MaterialIcons name="menu" size={28} color="#222" style={{ marginRight: 8 }} />
-        <Text style={styles.headerTitle}>
-          <Text style={{ color: '#2563eb', fontWeight: 'bold' }}>Employee Panel</Text>
-        </Text>
-      </View> */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Total Milk Supplied Today */}
         <View style={styles.totalSuppliedBox}>
-          <MaterialCommunityIcons name="cup-water" size={28} color="#2563eb" style={{ marginBottom: 2 }} />
+          <MaterialCommunityIcons name="cup-water" size={28} color="#2563eb" />
           <Text style={styles.totalSuppliedLabel}>Total Milk I Had Today</Text>
-          <Text style={styles.totalSuppliedValue}>{totalReceived} <Text style={{ fontSize: 18 }}>Litres</Text></Text>
+          <Text style={styles.totalSuppliedValue}>
+            {total} <Text style={{ fontSize: 18 }}>Litres</Text>
+          </Text>
         </View>
-        {/* Milk Cards */}
+
         <View style={styles.milkRow}>
           <View style={styles.milkCard}>
-            <MaterialCommunityIcons name="paw" size={22} color="#8b5cf6" />
+            <Text style={styles.emojiIcon}>🐄</Text>
             <Text style={styles.milkLabel}>Cow Milk</Text>
             <Text style={styles.milkValue}>{cowMilk} L</Text>
+            <Text style={styles.priceText}>Price: ₹{cowPrice}/L</Text>
           </View>
           <View style={styles.milkCard}>
-            <MaterialCommunityIcons name="weather-sunny" size={22} color="#facc15" />
+            <Text style={styles.emojiIcon}>🐃</Text>
             <Text style={styles.milkLabel}>Buffalo Milk</Text>
             <Text style={styles.milkValue}>{buffaloMilk} L</Text>
+            <Text style={styles.priceText}>Price: ₹{buffaloPrice}/L</Text>
           </View>
         </View>
-        {/* Dashboard Title */}
+
+
         <Text style={styles.dashboardTitle}>Employee Dashboard</Text>
         <Text style={styles.dashboardDesc}>Quick access to manage your dairy operations</Text>
-        {/* Options */}
+
         <TouchableOpacity style={styles.optionCard}>
           <MaterialCommunityIcons name="truck-delivery" size={22} color="#2563eb" style={styles.optionIcon} />
           <Text style={styles.optionText}>Milk Delivery</Text>
@@ -68,7 +88,7 @@ export default function EmployeeDashboard() {
           <Text style={styles.optionText}>Payments</Text>
         </TouchableOpacity>
       </ScrollView>
-      {/* Bottom Navigation */}
+
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
           <MaterialIcons name="home" size={22} color="#2563eb" />
@@ -116,7 +136,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 18,
     marginBottom: 16,
+    borderStyle: ' solid',
+    borderColor: '#023E8A',
+    borderWidth: 1,
   },
+  emojiIcon: {
+    fontSize: 30,
+    marginBottom: 4,
+  },
+
   totalSuppliedLabel: {
     color: '#222',
     fontSize: 16,
@@ -143,6 +171,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     elevation: 1,
     minWidth: width * 0.38,
+    borderStyle: 'solid',
+    borderColor: '#023E8A',
+    borderWidth: 1,
   },
   milkLabel: {
     color: '#64748b',
@@ -154,6 +185,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     marginTop: 2,
+  },
+  priceText: {
+    color: '#2563eb',
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 4,
   },
   dashboardTitle: {
     fontSize: 19,

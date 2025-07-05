@@ -16,6 +16,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+
 
 const { width } = Dimensions.get('window');
 
@@ -93,18 +95,37 @@ export default function AddCustomer() {
   };
 
   const handleAddCustomer = async () => {
-    const requiredFields = ['name', 'phone', 'password', 'address', 'area_id', 'daily_milk_needed', 'milk_category', 'delivery_time'];
+    const requiredFields = ['name', 'phone', 'password', 'address', 'area_id', 'employee_id', 'daily_milk_needed', 'milk_category', 'delivery_time'];
     for (let field of requiredFields) {
       if (!form[field] || (Array.isArray(form[field]) && form[field].length === 0)) {
+        console.log('Form Data:', form);
+
         return alert('Please fill all required fields');
       }
+    }
+
+    // Convert milk_category array to ENUM-compatible value
+    let milkCategoryValue = '';
+    if (form.milk_category.includes('cows') && form.milk_category.includes('buffalo')) {
+      milkCategoryValue = 'both';
+    } else if (form.milk_category.includes('cows')) {
+      milkCategoryValue = 'cow';
+    } else if (form.milk_category.includes('buffalo')) {
+      milkCategoryValue = 'buffalo';
+    } else {
+      return alert('Please select at least one milk category');
     }
 
     try {
       const res = await fetch('http://192.168.43.175:3000/api/add-customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          employee_assigned: form.employee_id,
+          milk_category: milkCategoryValue,
+          delivery_time: form.delivery_time,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -116,175 +137,186 @@ export default function AddCustomer() {
           password: '',
           address: '',
           area_id: '',
+          employee_id: '',
           daily_milk_needed: '',
           milk_category: [],
           delivery_time: '',
-          employee_id: '',
         });
       } else {
-        alert('Failed to add');
+        alert('Failed to add: ' + (data.message || 'Unknown error'));
       }
-    } catch {
+    } catch (err) {
       alert('Server error');
     }
   };
 
+
   return (
-  <SafeAreaView style={styles.safeArea}>
-    <StatusBar backgroundColor="#f1f6fd" barStyle="dark-content" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor="#f1f6fd" barStyle="dark-content" />
 
-    {/* Header */}
-    <View style={styles.headerRow}>
-      <TouchableOpacity style={styles.addBtn} onPress={() => setFormVisible(true)}>
-        <MaterialIcons name="add" size={24} color="#2563eb" />
-        <Text style={styles.addBtnText}>Add Customer</Text>
-      </TouchableOpacity>
-    </View>
-
-    {/* Filter Tabs */}
-    <View style={styles.filterTabs}>
-      <TouchableOpacity style={styles.tab} onPress={() => setFilterTab(prev => (prev === 'region' ? null : 'region'))}>
-        <Text style={styles.tabText}>{selectedRegion?.landmark || 'Region'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.tab} onPress={() => setFilterTab(prev => (prev === 'employee' ? null : 'employee'))}>
-        <Text style={styles.tabText}>{selectedEmployee?.name || 'Employee'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
-        <Text style={styles.resetBtnText}>Reset</Text>
-      </TouchableOpacity>
-    </View>
-
-    {/* Dropdowns */}
-    {filterTab === 'region' && (
-      <View style={styles.dropdownList}>
-        {areas.map(item => (
-          <TouchableOpacity key={item.id} style={styles.dropdownItem}
-            onPress={() => {
-              setSelectedRegion(item);
-              const emps = employees.filter(e => e.area_id === item.id);
-              setFilteredEmployees(emps);
-              if (!emps.find(e => e.id === selectedEmployee?.id)) {
-                setSelectedEmployee(null);
-              }
-              applyFilters(item, selectedEmployee?.area_id === item.id ? selectedEmployee : null);
-              setFilterTab(null);
-            }}
-          >
-            <Text style={styles.dropdownText}>{item.landmark}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => setFormVisible(true)}>
+          <MaterialIcons name="add" size={24} color="#2563eb" />
+          <Text style={styles.addBtnText}>Add Customer</Text>
+        </TouchableOpacity>
       </View>
-    )}
-    {filterTab === 'employee' && (
-      <View style={styles.dropdownList}>
-        {filteredEmployees.map(item => (
-          <TouchableOpacity key={item.id} style={styles.dropdownItem}
-            onPress={() => {
-              setSelectedEmployee(item);
-              applyFilters(selectedRegion, item);
-              setFilterTab(null);
-            }}
-          >
-            <Text style={styles.dropdownText}>{item.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    )}
 
-    {/* Customer List */}
-    <FlatList
-      data={filteredCustomers}
-      keyExtractor={(item, index) => index.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.phone}>{item.phone}</Text>
-          <Text style={styles.address}>{item.address}</Text>
-          <Text style={styles.deliveryTime}>Delivery: {item.delivery_time}</Text>
-          <Text style={styles.meta}>Area: {item.area_name}</Text>
-          <Text style={styles.meta}>Employee: {item.employee_name}</Text>
+      {/* Filter Tabs */}
+      <View style={styles.filterTabs}>
+        <TouchableOpacity style={styles.tab} onPress={() => setFilterTab(prev => (prev === 'region' ? null : 'region'))}>
+          <Text style={styles.tabText}>{selectedRegion?.landmark || 'Region'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab} onPress={() => setFilterTab(prev => (prev === 'employee' ? null : 'employee'))}>
+          <Text style={styles.tabText}>{selectedEmployee?.name || 'Employee'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
+          <Text style={styles.resetBtnText}>Reset</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Dropdowns */}
+      {filterTab === 'region' && (
+        <View style={styles.dropdownList}>
+          {areas.map(item => (
+            <TouchableOpacity key={item.id} style={styles.dropdownItem}
+              onPress={() => {
+                setSelectedRegion(item);
+                const emps = employees.filter(e => e.area_id === item.id);
+                setFilteredEmployees(emps);
+                if (!emps.find(e => e.id === selectedEmployee?.id)) {
+                  setSelectedEmployee(null);
+                }
+                applyFilters(item, selectedEmployee?.area_id === item.id ? selectedEmployee : null);
+                setFilterTab(null);
+              }}
+            >
+              <Text style={styles.dropdownText}>{item.landmark}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       )}
-    />
+      {filterTab === 'employee' && (
+        <View style={styles.dropdownList}>
+          {filteredEmployees.map(item => (
+            <TouchableOpacity key={item.id} style={styles.dropdownItem}
+              onPress={() => {
+                setSelectedEmployee(item);
+                applyFilters(selectedRegion, item);
+                setFilterTab(null);
+              }}
+            >
+              <Text style={styles.dropdownText}>{item.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
-    {/* Modal */}
-    <Modal visible={formVisible} transparent animationType="fade" onRequestClose={() => setFormVisible(false)}>
-      <View style={styles.modalOverlay}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.centeredView}>
-          <Pressable style={styles.formBox}>
-            <ScrollView keyboardShouldPersistTaps="handled">
-              <Text style={styles.formTitle}>Add Customer</Text>
+      {/* Customer List */}
+      <FlatList
+        data={filteredCustomers}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.phone}>{item.phone}</Text>
+            <Text style={styles.address}>{item.address}</Text>
+            <Text style={styles.deliveryTime}>Delivery: {item.delivery_time}</Text>
+            <Text style={styles.meta}>Area: {item.area_name}</Text>
+            <Text style={styles.meta}>Employee: {item.employee_name}</Text>
+          </View>
+        )}
+      />
 
-              <TextInput style={styles.input} placeholder="Full Name" value={form.name} onChangeText={t => setForm({ ...form, name: t })} />
-              <TextInput style={styles.input} placeholder="Phone" keyboardType="number-pad" maxLength={10} value={form.phone} onChangeText={t => setForm({ ...form, phone: t.replace(/[^0-9]/g, '') })} />
-              <TextInput style={styles.input} placeholder="Password" secureTextEntry value={form.password} onChangeText={t => setForm({ ...form, password: t })} />
-              <TextInput style={styles.input} placeholder="Address" value={form.address} onChangeText={t => setForm({ ...form, address: t })} />
+      {/* Modal */}
+      <Modal visible={formVisible} transparent animationType="fade" onRequestClose={() => setFormVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.centeredView}>
+            <Pressable style={styles.formBox}>
+              <ScrollView keyboardShouldPersistTaps="handled">
+                <Text style={styles.formTitle}>Add Customer</Text>
 
-              {/* Area Dropdown */}
-              <TouchableOpacity style={styles.dropdown} onPress={() => setDropdowns({ ...dropdowns, area: !dropdowns.area })}>
-                <Text style={styles.dropdownText}>{areas.find(a => a.id === form.area_id)?.landmark || 'Select Area'}</Text>
-                <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
-              </TouchableOpacity>
-              {dropdowns.area && (
-                <View style={styles.dropdownList}>
-                  {areas.map(a => (
-                    <TouchableOpacity key={a.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, area_id: a.id }); setDropdowns({ ...dropdowns, area: false }); }}>
-                      <Text style={styles.dropdownText}>{a.landmark}</Text>
+                <TextInput style={styles.input} placeholder="Full Name" value={form.name} onChangeText={t => setForm({ ...form, name: t })} />
+                <TextInput style={styles.input} placeholder="Phone" keyboardType="number-pad" maxLength={10} value={form.phone} onChangeText={t => setForm({ ...form, phone: t.replace(/[^0-9]/g, '') })} />
+                <TextInput style={styles.input} placeholder="Password" secureTextEntry value={form.password} onChangeText={t => setForm({ ...form, password: t })} />
+                <TextInput style={styles.input} placeholder="Address" value={form.address} onChangeText={t => setForm({ ...form, address: t })} />
+
+                {/* Area Dropdown */}
+                <TouchableOpacity style={styles.dropdown} onPress={() => setDropdowns({ ...dropdowns, area: !dropdowns.area })}>
+                  <Text style={styles.dropdownText}>{areas.find(a => a.id === form.area_id)?.landmark || 'Select Area'}</Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
+                </TouchableOpacity>
+                {dropdowns.area && (
+                  <View style={styles.dropdownList}>
+                    {areas.map(a => (
+                      <TouchableOpacity key={a.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, area_id: a.id }); setDropdowns({ ...dropdowns, area: false }); }}>
+                        <Text style={styles.dropdownText}>{a.landmark}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* Employee Dropdown */}
+                <TouchableOpacity style={styles.dropdown} onPress={() => setDropdowns({ ...dropdowns, employee: !dropdowns.employee })}>
+                  <Text style={styles.dropdownText}>{employees.find(e => e.id === form.employee_id)?.name || 'Select Employee'}</Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
+                </TouchableOpacity>
+                {dropdowns.employee && (
+                  <View style={styles.dropdownList}>
+                    {filteredEmployees.map(e => (
+                      <TouchableOpacity key={e.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, employee_id: e.id }); setDropdowns({ ...dropdowns, employee: false }); }}>
+                        <Text style={styles.dropdownText}>{e.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                <Picker
+                  selectedValue={form.delivery_time}
+                  onValueChange={(itemValue) =>
+                    setForm({ ...form, delivery_time: itemValue })
+                  }
+                >
+                  <Picker.Item label="Select Delivery Time" value="" />
+                  <Picker.Item label="Morning" value="morning" />
+                  <Picker.Item label="Evening" value="evening" />
+                </Picker>
+
+                <TextInput style={styles.dropdown} placeholder="Daily Milk Needed (L)" keyboardType="numeric" value={form.daily_milk_needed} onChangeText={t => setForm({ ...form, daily_milk_needed: t })} />
+
+                <Text style={styles.label}>Milk Category</Text>
+                <View style={styles.checkboxRow}>
+                  {['cows', 'buffalo'].map(cat => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={styles.checkboxItem}
+                      onPress={() => {
+                        const updated = form.milk_category.includes(cat)
+                          ? form.milk_category.filter(c => c !== cat)
+                          : [...form.milk_category, cat];
+                        setForm({ ...form, milk_category: updated });
+                      }}
+                    >
+                      <MaterialIcons
+                        name={form.milk_category.includes(cat) ? 'check-box' : 'check-box-outline-blank'}
+                        size={22}
+                        color="#2563eb"
+                      />
+                      <Text style={styles.checkboxLabel}>{cat === 'cows' ? "Cow's Milk" : "Buffalo's Milk"}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-              )}
 
-              {/* Employee Dropdown */}
-              <TouchableOpacity style={styles.dropdown} onPress={() => setDropdowns({ ...dropdowns, employee: !dropdowns.employee })}>
-                <Text style={styles.dropdownText}>{employees.find(e => e.id === form.employee_id)?.name || 'Select Employee'}</Text>
-                <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
-              </TouchableOpacity>
-              {dropdowns.employee && (
-                <View style={styles.dropdownList}>
-                  {filteredEmployees.map(e => (
-                    <TouchableOpacity key={e.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, employee_id: e.id }); setDropdowns({ ...dropdowns, employee: false }); }}>
-                      <Text style={styles.dropdownText}>{e.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              <TextInput style={styles.input} placeholder="Delivery Time" value={form.delivery_time} onChangeText={t => setForm({ ...form, delivery_time: t })} />
-              <TextInput style={styles.input} placeholder="Daily Milk Needed" keyboardType="numeric" value={form.daily_milk_needed} onChangeText={t => setForm({ ...form, daily_milk_needed: t })} />
-
-              <Text style={styles.label}>Milk Category</Text>
-              <View style={styles.checkboxRow}>
-                {['cows', 'buffalo'].map(cat => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={styles.checkboxItem}
-                    onPress={() => {
-                      const updated = form.milk_category.includes(cat)
-                        ? form.milk_category.filter(c => c !== cat)
-                        : [...form.milk_category, cat];
-                      setForm({ ...form, milk_category: updated });
-                    }}
-                  >
-                    <MaterialIcons
-                      name={form.milk_category.includes(cat) ? 'check-box' : 'check-box-outline-blank'}
-                      size={22}
-                      color="#2563eb"
-                    />
-                    <Text style={styles.checkboxLabel}>{cat === 'cows' ? "Cow's Milk" : "Buffalo's Milk"}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity style={styles.submitBtn} onPress={handleAddCustomer}>
-                <Text style={styles.submitBtnText}>Add Customer</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  </SafeAreaView>
+                <TouchableOpacity style={styles.submitBtn} onPress={handleAddCustomer}>
+                  <Text style={styles.submitBtnText}>Add Customer</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
@@ -317,7 +349,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginLeft: 6,
   },
-   dropdown: {
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    marginVertical: 8,
+    height: 50,
+    justifyContent: 'center',
+  },
+  dropdown: {
     backgroundColor: '#f1f5ff',
     borderRadius: 6,
     padding: 12,

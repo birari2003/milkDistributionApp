@@ -90,7 +90,6 @@ export default function AssignMilk() {
                     <Text>🐃 Buffalo Milk: {item.buffaloMilk} L</Text>
                 </View>
             ))}
-
         </ScrollView>
     );
 }

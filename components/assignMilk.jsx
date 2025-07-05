@@ -25,6 +25,7 @@ export default function AssignMilkScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingNeeds, setLoadingNeeds] = useState(true);
   const [tomorrowNeed, setTomorrowNeed] = useState({});
+  const [assignedToday, setAssignedToday] = useState([]);
 
   useEffect(() => {
     // Fetch employees
@@ -36,7 +37,7 @@ export default function AssignMilkScreen() {
           const inputMap = {}, assignedMap = {}, editMap = {}, errorMap = {};
           data.employees.forEach(emp => {
             inputMap[emp.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
-            assignedMap[emp.id] = false;
+            assignedMap[emp.id] = emp.is_assigned === 1; // set initial assignment based on API
             editMap[emp.id] = false;
             errorMap[emp.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
           });
@@ -55,28 +56,44 @@ export default function AssignMilkScreen() {
       .finally(() => setLoading(false));
 
     // Fetch tomorrow's milk needs
-    fetch('http://192.168.43.175:3000/api/area-wise-report')
+    // Fetch tomorrow's milk needs
+    fetch('http://192.168.43.175:3000/api/employee-milk-need-tomorrow')
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
           const map = {};
           data.data.forEach(item => {
-            map[item.employee_name] = {
-              cow: item.cow_tomorrow || 0,
-              buffalo: item.buffalo_tomorrow || 0
+            map[item.employee_id] = {
+              cow: item.estimated_cow_milk || 0,
+              buffalo: item.estimated_buffalo_milk || 0
             };
           });
           setTomorrowNeed(map);
         }
       })
-      .catch(err => console.error("Error fetching area-wise report", err))
+      .catch(err => console.error("Error fetching employee milk need", err))
       .finally(() => setLoadingNeeds(false));
-  }, []);
+
+
+
+    // Fetch assigned employees
+    fetch('http://192.168.43.175:3000/api/assigned-employees')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAssignedToday(data.assigned); // Array of employee_id
+        }
+      })
+      .catch(err => console.error("Error fetching assigned employees", err));
+
+  },
+
+    []);
 
   const handleInputChange = (empId, type, value) => {
     let val = value.replace(/[^0-9]/g, '');
     if (val.length > 1 && val.startsWith('0')) val = val.replace(/^0+/, '');
-    if (val !== '' && parseInt(val) > 200) {
+    if (val !== '' && parseInt(val) > 100) {
       setInputs(prev => ({
         ...prev,
         [empId]: { ...prev[empId], [type]: '' },
@@ -148,12 +165,8 @@ export default function AssignMilkScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* <View style={styles.headerRow}>
-        <MaterialIcons name="menu" size={26} color="#222" style={{ marginRight: 8 }} />
-        <Text style={styles.headerTitle}>Assign Milk to Employee</Text>
-      </View> */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 50, paddingTop: 10 }}>
         {employees.map((emp) => {
           const { cow, buffalo, extraCow, extraBuffalo } = inputs[emp.id] || {};
           const empError = error[emp.id] || {};
@@ -161,39 +174,43 @@ export default function AssignMilkScreen() {
             assigned[emp.id] ||
             (cow?.trim() === '' && buffalo?.trim() === '');
 
-          const estimated = tomorrowNeed[emp.name] || { cow: 0, buffalo: 0 };
+          const estimated = tomorrowNeed[emp.id] || { cow: 0, buffalo: 0 };
 
           return (
-            <View key={emp.id} style={[styles.empCard, { width: getCardWidth(), alignSelf: 'center' }]}>
-              <View style={styles.empInfoRow}>
+            <View key={emp.id} style={{
+              backgroundColor: '#fff',
+              padding: 14,
+              marginBottom: 16,
+              borderRadius: 12,
+              width: getCardWidth(),
+              alignSelf: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}>
+              <View style={{ flexDirection: 'row', marginBottom: 10 }}>
                 <MaterialIcons name="person" size={22} color="#8b5cf6" style={{ marginRight: 8 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.empName}>{emp.name}</Text>
-                  <Text style={styles.empPhone}>
-                    <MaterialIcons name="phone" size={15} color="#2563eb" />{' '}
-                    <Text style={{ color: '#2563eb' }}>{emp.contact}</Text>
-                  </Text>
-                  <Text style={styles.empRegion}>
-                    <MaterialIcons name="place" size={15} color="#22c55e" />{' '}
-                    <Text style={{ color: '#22c55e' }}>{emp.area_name}</Text>
-                  </Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{emp.name}</Text>
+                  <Text style={{ color: '#2563eb', fontSize: 13 }}>{emp.contact}</Text>
+                  <Text style={{ color: '#22c55e', fontSize: 13 }}>{emp.area_name}</Text>
                 </View>
               </View>
 
-              {/* Estimated Milk Need */}
-              <View style={{ marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#2563eb', fontSize: 13 }}>
-                  Est. Cow: {estimated.cow} L
-                </Text>
-                <Text style={{ color: '#f43f5e', fontSize: 13 }}>
-                  Est. Buffalo: {estimated.buffalo} L
-                </Text>
+
+
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={{ fontSize: 13, color: '#0ea5e9' }}>Est. Cow: {estimated.cow} L</Text>
+                <Text style={{ fontSize: 13, color: '#f43f5e' }}>Est. Buffalo: {estimated.buffalo} L</Text>
               </View>
 
-              {/* Cow & Buffalo Inputs */}
-              <View style={styles.inputLabelRow}>
+              {/* Cow and Buffalo Inputs */}
+              <View style={{ flexDirection: 'row', marginBottom: 6 }}>
                 <View style={{ flex: 1, marginRight: 6 }}>
-                  <Text style={styles.inputLabelCow}>Cow Milk (L)</Text>
+                  <Text style={{ fontSize: 13 }}>Cow Milk</Text>
                   <TextInput
                     style={styles.inputBox}
                     keyboardType="numeric"
@@ -204,7 +221,7 @@ export default function AssignMilkScreen() {
                   {empError.cow && <Text style={styles.errorMsg}>{empError.cow}</Text>}
                 </View>
                 <View style={{ flex: 1, marginLeft: 6 }}>
-                  <Text style={styles.inputLabelBuffalo}>Buffalo Milk (L)</Text>
+                  <Text style={{ fontSize: 13 }}>Buffalo Milk</Text>
                   <TextInput
                     style={styles.inputBox}
                     keyboardType="numeric"
@@ -217,9 +234,9 @@ export default function AssignMilkScreen() {
               </View>
 
               {/* Extra Milk Inputs */}
-              <View style={styles.inputLabelRow}>
+              <View style={{ flexDirection: 'row', marginBottom: 10 }}>
                 <View style={{ flex: 1, marginRight: 6 }}>
-                  <Text style={styles.inputLabelCow}>Extra Cow Milk (L)</Text>
+                  <Text style={{ fontSize: 13 }}>Extra Cow</Text>
                   <TextInput
                     style={styles.inputBox}
                     keyboardType="numeric"
@@ -227,10 +244,9 @@ export default function AssignMilkScreen() {
                     onChangeText={(text) => handleInputChange(emp.id, 'extraCow', text)}
                     editable={!assigned[emp.id] || editing[emp.id]}
                   />
-                  {empError.extraCow && <Text style={styles.errorMsg}>{empError.extraCow}</Text>}
                 </View>
                 <View style={{ flex: 1, marginLeft: 6 }}>
-                  <Text style={styles.inputLabelBuffalo}>Extra Buffalo Milk (L)</Text>
+                  <Text style={{ fontSize: 13 }}>Extra Buffalo</Text>
                   <TextInput
                     style={styles.inputBox}
                     keyboardType="numeric"
@@ -238,33 +254,45 @@ export default function AssignMilkScreen() {
                     onChangeText={(text) => handleInputChange(emp.id, 'extraBuffalo', text)}
                     editable={!assigned[emp.id] || editing[emp.id]}
                   />
-                  {empError.extraBuffalo && <Text style={styles.errorMsg}>{empError.extraBuffalo}</Text>}
                 </View>
               </View>
+              {/* Milk Already Assigned Info */}
+              {assignedToday.includes(emp.id) && (
+                <Text style={{ color: 'green', marginTop: 4, fontSize: 13 }}>
+                  Milk is already assigned
+                </Text>
+              )}
 
-              <View style={styles.actionRow}>
+              {/* Actions */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <TouchableOpacity
-                  style={[
-                    styles.assignBtn,
-                    assigned[emp.id] && styles.assignedBtn,
-                    isDisabled && !assigned[emp.id] && styles.disabledBtn,
-                  ]}
                   onPress={() => handleAssign(emp.id)}
                   disabled={isDisabled}
+                  style={{
+                    flex: 1,
+                    backgroundColor: assigned[emp.id] ? '#10b981' : '#3b82f6',
+                    paddingVertical: 10,
+                    borderRadius: 6,
+                    opacity: isDisabled ? 0.6 : 1,
+                    marginRight: 6,
+                  }}
                 >
-                  <Text style={[
-                    styles.assignBtnText,
-                    assigned[emp.id] && styles.assignedBtnText
-                  ]}>
+                  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>
                     {assigned[emp.id] ? 'Milk Assigned' : 'Assign'}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.editBtn}
                   onPress={() => handleEdit(emp.id)}
                   disabled={!assigned[emp.id]}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 16,
+                    borderRadius: 6,
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                  }}
                 >
-                  <MaterialIcons name="edit" size={22} color="#2563eb" />
+                  <MaterialIcons name="edit" size={20} color="#3b82f6" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -339,7 +367,7 @@ const styles = StyleSheet.create({
   inputLabelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding:"auto",
+    padding: "auto",
     marginTop: 10,
     marginBottom: 10,
   },

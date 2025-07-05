@@ -4,6 +4,7 @@ import { View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import CustomerDashboard from '../screens/CustomerDashboard.js';
+import CustDeliveryDetails from '../screens/customerReport.js';
 
 import seeCustomer from '../screens/seeCustomer';
 import PaymentsScreen from '../screens/PaymentsScreen';
@@ -25,11 +26,20 @@ const DrawerMenuCustomer = () => {
         name="CustomerDashboard"
         component={CustomerDashboard}
         options={{
-          title: 'Dashboard',
+          title: 'Customer Panel',
           drawerIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
-      <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
+
+      <Drawer.Screen
+        name="CustDeliveryDetails"
+        component={CustDeliveryDetails}
+        options={{
+          title: 'Delivery Details',
+          drawerIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} />,
+        }}  
+      />
+            <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
         drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
       }} />
       <Drawer.Screen
@@ -43,6 +53,7 @@ const DrawerMenuCustomer = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
         }}
       />
+      
     </Drawer.Navigator>
   );
 };

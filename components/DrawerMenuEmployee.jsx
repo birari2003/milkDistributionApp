@@ -11,6 +11,9 @@ import SeeCustomer from '../screens/seeCustomer';
 import AreaScreen from '../screens/addArea';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import { AuthContext } from '../App';
+import AssignMilk from '../screens/AssignMilk';
+
+
 
 const Drawer = createDrawerNavigator();
 
@@ -32,21 +35,20 @@ const DrawerMenuEmployee = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
-      <Drawer.Screen name="Manage Customers" component={AddCustomer} options={{
-        drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
-      }} />
-      <Drawer.Screen name="Employee Inventory" component={EmployeeInventoryScreen} options={{
-        drawerIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} />,
-      }} />
-      <Drawer.Screen name="See Customers" component={SeeCustomer} options={{
+      <Drawer.Screen name="Distribute Milk" component={SeeCustomer} options={{
         drawerIcon: ({ color, size }) => <Ionicons name="eye-outline" size={size} color={color} />,
       }} />
-      <Drawer.Screen name="Add Area" component={AreaScreen} options={{
-        drawerIcon: ({ color, size }) => <Ionicons name="map-outline" size={size} color={color} />,
+        <Drawer.Screen name="Employee Inventory" component={EmployeeInventoryScreen} options={{
+          drawerIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} />,
+        }} />
+      <Drawer.Screen name="Add Customers" component={AddCustomer} options={{
+        drawerIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
       }} />
+
       <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
         drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
       }} />
+
       <Drawer.Screen
         name="Logout"
         component={() => (

@@ -13,6 +13,8 @@ import AreaScreen from '../screens/addArea';
 import DailyReport from '../screens/dailyReport';
 import AssignMilkScreen from './assignMilk';
 import { AuthContext } from '../App';
+import OwnerUpdatePriceScreen from '../screens/OwnerUpdatePriceScreen';
+import EmployeeSalaryScreen from '../screens/EmployeeSalaryScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -98,6 +100,24 @@ const DrawerMenu = () => {
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="map-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Update Milk Price"
+        component={OwnerUpdatePriceScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cash-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Employee Salary"
+        component={EmployeeSalaryScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cash-outline" size={size} color={color} />
           ),
         }}
       />

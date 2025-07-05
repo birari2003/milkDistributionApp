@@ -1,103 +1,115 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Modal,
+  Pressable,
   ScrollView,
-  ActivityIndicator,
-  Alert,
+  Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 
 export default function AdminDashboard() {
-  const navigation = useNavigation(); // <-- Important for navigation
+  const navigation = useNavigation();
+  const [menuVisible, setMenuVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('Home');
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  const [cowMilk, setCowMilk] = useState(0);
+  const [buffaloMilk, setBuffaloMilk] = useState(0);
+  const [totalMilk, setTotalMilk] = useState(0);
+
+  const toggleMenu = () => setMenuVisible(!menuVisible);
+  const handleOption = (option) => {
+    setMenuVisible(false);
+    alert(`${option} clicked`);
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/owner-dashboard-summary');
+      const data = await res.json();
+      if (data.success) {
+        setCowMilk(data.total_cow_milk);
+        setBuffaloMilk(data.total_buffalo_milk);
+        setTotalMilk(data.total);
+        console.log('Dashboard data:', data);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to load dashboard data');
+      }
+    } catch (err) {
+      console.error('Dashboard error:', err);
+      Alert.alert('Error', 'Network issue while loading dashboard');
+    }
+
+  };
 
   useEffect(() => {
-    fetch('http://192.168.43.175:3000/api/milk-summary')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setSummary(data.data);
-        } else {
-          Alert.alert('Error', data.message || 'Unable to fetch summary.');
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        Alert.alert('Error', 'Failed to connect to server.');
-      })
-      .finally(() => setLoading(false));
+    fetchDashboardData();
   }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#0ea5e9" />
-        <Text style={{ marginTop: 10 }}>Loading summary...</Text>
-      </View>
-    );
-  }
-
-  const cowMilk = summary?.total_cow_today || 0;
-  const buffaloMilk = summary?.total_buffalo_today || 0;
-  const totalMilk = cowMilk + buffaloMilk;
 
   return (
     <View style={styles.container}>
+      {/* Main Content */}
       <ScrollView contentContainerStyle={styles.scroll} style={{ marginBottom: 60 }}>
         <View style={styles.totalMilkCard}>
           <Icon name="local-drink" size={28} color="#0ea5e9" />
-          <Text style={styles.totalMilkText}>Total Milk Distributed Today</Text>
+          <Text style={styles.totalMilkText}>Total Milk Supplied Today</Text>
           <Text style={styles.totalMilkValue}>{totalMilk} Litres</Text>
         </View>
 
         <View style={styles.milkContainer}>
           <View style={styles.milkCard}>
-            <Text style={styles.petIcon}> 🐄 </Text>
+            <Text style={styles.emojiIcon}>🐄</Text>
             <Text style={styles.milkLabel}>Cow Milk</Text>
             <Text style={styles.milkValue}>{cowMilk} L</Text>
+            <Text style={styles.priceLabel}>Price: ₹56/L</Text>
           </View>
           <View style={styles.milkCard}>
-            <Text style={styles.petIcon}> 🐃 </Text>
+            <Text style={styles.emojiIcon}>🐃</Text>
             <Text style={styles.milkLabel}>Buffalo Milk</Text>
             <Text style={styles.milkValue}>{buffaloMilk} L</Text>
+            <Text style={styles.priceLabel}>Price: ₹70/L</Text>
           </View>
+
+
         </View>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Assign Milk')}>
-          <Icon name="assignment" size={24} color="#0ea5e9" />
-          <Text style={styles.cardText}>Assign Milk</Text>
-        </TouchableOpacity>
+        {/* Assign Milk Option */}
+        <View style={{ padding: 20 }}>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Assign Milk')}>
+            <Icon name="assignment" size={24} color="#0ea5e9" />
+            <Text style={styles.cardText}>Assign Milk</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.heading}>Admin Dashboard</Text>
-        <Text style={styles.subheading}>Quick access to manage your dairy operations</Text>
+          <Text style={styles.heading}>Admin Dashboard</Text>
+          <Text style={styles.subheading}>Quick access to manage your dairy operations</Text>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Add Employee')}>
-          <Icon name="groups" size={24} color="#3b82f6" />
-          <Text style={styles.cardText}>Employees</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Add Employee')}>
+            <Icon name="groups" size={24} color="#3b82f6" />
+            <Text style={styles.cardText}>Add Employee</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Add Customer')}>
-          <Icon name="person" size={24} color="#f97316" />
-          <Text style={styles.cardText}>Customers</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Add Customer')}>
+            <Icon name="person" size={24} color="#f97316" />
+            <Text style={styles.cardText}>Add Customers</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Daily Report')}>
-          <Icon name="inventory" size={24} color="#10b981" />
-          <Text style={styles.cardText}>Milk Inventory</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Daily Report')}>
+            <Icon name="inventory" size={24} color="#10b981" />
+            <Text style={styles.cardText}>Daily Report</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Payments')}>
-          <Icon name="payments" size={24} color="#60a5fa" />
-          <Text style={styles.cardText}>Payment Status</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Payment Status')}>
+            <Icon name="payments" size={24} color="#60a5fa" />
+            <Text style={styles.cardText}>Payment Status</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
+      {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity onPress={() => setActiveTab('Home')} style={styles.navItem}>
           <Icon name="home" size={28} color={activeTab === 'Home' ? '#0284c7' : '#555'} />
@@ -115,8 +127,6 @@ export default function AdminDashboard() {
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
@@ -153,28 +163,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0f2fe',
     margin: 15,
     padding: 20,
-    borderWidth: 1,
-borderColor: '#054781',
     borderRadius: 12,
     alignItems: 'center',
     elevation: 3,
+        borderStyle : ' solid',
+    borderColor: '#023E8A',
+    borderWidth: 1,
   },
   totalMilkText: {
     fontSize: 18,
     marginTop: 5,
     color: '#0f172a',
-    
     fontWeight: '600',
   },
   totalMilkValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#054781',
+    color: '#0284c7',
     marginTop: 5,
-  },
-  petIcon: {
-    fontSize: 30,
-    color: '#8b5cf6',
   },
 
   // Cow/Buffalo Milk
@@ -188,11 +194,12 @@ borderColor: '#054781',
     backgroundColor: '#f1f5f9',
     borderRadius: 12,
     padding: 15,
-        borderWidth: 1,
-    borderColor: '#054781',
     alignItems: 'center',
     width: '45%',
     elevation: 2,
+        borderStyle : ' solid',
+    borderColor: '#023E8A',
+    borderWidth: 1,
   },
   milkLabel: {
     marginTop: 5,
@@ -204,6 +211,12 @@ borderColor: '#054781',
     fontSize: 18,
     fontWeight: 'bold',
     color: '#0f172a',
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '600',
+    marginTop: 4,
   },
 
   // Dashboard cards
@@ -266,6 +279,11 @@ borderColor: '#054781',
   navItem: {
     alignItems: 'center',
   },
+  emojiIcon: {
+    fontSize: 30,
+    marginBottom: 4,
+  },
+
   navText: {
     fontSize: 12,
     color: '#555',

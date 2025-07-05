@@ -6,76 +6,302 @@ import bcrypt from 'bcrypt';
 
 // Signup API
 router.post('/api/owner/signup', async (req, res) => {
-    const { name, phone, email, address, password } = req.body;
-
-    try {
-        // Generate hashed password
-        const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
-
-        // Insert into database
-        db.query(
-            'INSERT INTO owners (name, phone, email, address, password) VALUES (?, ?, ?, ?, ?)',
-            [name, phone, email, address, hashedPassword],
-            (err, result) => {
-                if (err) return res.status(400).json({ error: 'Email already exists or error occurred' });
-                res.json({ success: true });
-            }
-        );
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error during signup' });
-    }
-});
-
-
-// POST: /api/assign-milk
-router.post('/api/assign-milk', async (req, res) => {
-  const {
-    id, // employee_id
-    cow_milk,
-    buffalo_milk,
-    extra_cow_milk,
-    extra_buffalo_milk
-  } = req.body;
-
-  if (
-    !id ||
-    cow_milk == null ||
-    buffalo_milk == null ||
-    extra_cow_milk == null ||
-    extra_buffalo_milk == null
-  ) {
-    return res.status(400).json({ success: false, message: 'All fields are required.' });
-  }
+  const { name, phone, email, address, password } = req.body;
 
   try {
-    await db.execute(
-      `INSERT INTO assignmilk (
-        employee_id, assigned_date, cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk
-      ) VALUES (?,?,?,?,?,?)`,
-      [id, new Date(), cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk]
-    );
+    // Generate hashed password
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
 
-    res.json({ success: true, message: 'Milk assigned successfully.' });
-  } catch (err) {
-    console.error('Assign milk error:', err);
-    res.status(500).json({ success: false, message: 'Database error.' });
+    // Insert into database
+    db.query(
+      'INSERT INTO owners (name, phone, email, address, password) VALUES (?, ?, ?, ?, ?)',
+      [name, phone, email, address, hashedPassword],
+      (err, result) => {
+        if (err) return res.status(400).json({ error: 'Email already exists or error occurred' });
+        res.json({ success: true });
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error during signup' });
   }
 });
-// Get today's assigned milk records
-router.get('/api/assigned-milk-today', async (req, res) => {
+
+
+router.post('/api/assign-milk', (req, res) => {
+  const { id, cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Employee ID is required" });
+  }
+
+  const query = `
+    INSERT INTO assign_milk 
+      (employee_id, cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk) 
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE 
+      cow_milk = VALUES(cow_milk), 
+      buffalo_milk = VALUES(buffalo_milk),
+      extra_cow_milk = VALUES(extra_cow_milk),
+      extra_buffalo_milk = VALUES(extra_buffalo_milk),
+      assigned_at = CURRENT_TIMESTAMP
+  `;
+
+  const values = [id, cow_milk, buffalo_milk, extra_cow_milk, extra_buffalo_milk];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error("Error assigning milk:", err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+    res.json({ success: true, message: "Milk assigned successfully" });
+  });
+});
+// in routes file (e.g., index.js or milk.js)
+router.post('/api/employee-milk-summary', (req, res) => {
+  const { employee_id } = req.body;
+
+  if (!employee_id) {
+    return res.status(400).json({ success: false, message: 'Employee ID is required' });
+  }
+
+  const query = `
+    SELECT 
+      cow_milk, 
+      buffalo_milk, 
+      extra_cow_milk, 
+      extra_buffalo_milk 
+    FROM assign_milk 
+    WHERE employee_id = ? 
+      AND DATE(assigned_at) = CURDATE()
+  `;
+
+  db.query(query, [employee_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching assigned milk:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.json({ success: true, cow: 0, buffalo: 0, total: 0 });
+    }
+
+    const milk = results[0];
+    const cow = (milk.cow_milk || 0) + (milk.extra_cow_milk || 0);
+    const buffalo = (milk.buffalo_milk || 0) + (milk.extra_buffalo_milk || 0);
+    const total = cow + buffalo;
+
+    res.json({ success: true, cow, buffalo, total });
+  });
+});
+
+router.get('/api/employee-milk-summary-dash', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  const query = `
+    SELECT 
+      e.id AS employee_id,
+      e.name AS employee_name,
+      e.contact AS employee_phone,
+      IFNULL(SUM(dr.got_cow_milk_today + dr.extra_today * (c.milk_category = 'cow')), 0) AS total_cow_milk,
+      IFNULL(SUM(dr.got_buffalo_milk_today + dr.extra_today * (c.milk_category = 'buffalo')), 0) AS total_buffalo_milk
+    FROM employees e
+    LEFT JOIN daily_report dr ON e.id = dr.assigned_employee_id AND DATE(dr.created_at) = ?
+    LEFT JOIN customer c ON dr.customer_id = c.id
+    GROUP BY e.id
+  `;
+
+  db.query(query, [today], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee milk summary:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, data: results });
+  });
+});
+
+
+// GET /api/return-milk-summary
+router.get('/api/return-milk-summary', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const sql = `
+    SELECT 
+      SUM(returned_cow_milk) AS returned_cow_milk,
+      SUM(returned_buffalo_milk) AS returned_buffalo_milk
+    FROM return_milk
+    WHERE return_date = ?
+  `;
+
+  db.query(sql, [today], (err, results) => {
+    if (err) {
+      console.error("Return milk summary error:", err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    const row = results[0] || {};
+    const cow = Number(row.returned_cow_milk) || 0;
+    const buffalo = Number(row.returned_buffalo_milk) || 0;
+
+    res.json({
+      success: true,
+      returned_cow_milk: cow,
+      returned_buffalo_milk: buffalo,
+      total: cow + buffalo,
+    });
+  });
+});
+
+
+router.get('/api/employee-milk-need-tomorrow', (req, res) => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate()); // still "today", since we check will_get_*_tomorrow
+  const todayStr = tomorrow.toISOString().slice(0, 10);
+
+  const sql = `
+    SELECT 
+      dr.customer_id,
+      dr.assigned_employee_id,
+      dr.will_get_cow_milk_tomorrow,
+      dr.will_get_buffalo_milk_tomorrow,
+      dr.extra_tomorrow,
+      c.milk_category,
+      c.daily_milk_needed
+    FROM daily_report dr
+    JOIN customer c ON dr.customer_id = c.id
+    WHERE DATE(dr.created_at) = ?
+  `;
+
+  db.query(sql, [todayStr], (err, results) => {
+    if (err) {
+      console.error("Milk need calculation error:", err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    const employeeMilkMap = {};
+    results.forEach(row => {
+  console.log('Row:', row);  // 👈 log everything for this row
+
+  const empId = row.assigned_employee_id;
+  const milkType = row.milk_category;
+  const extraTomorrow = parseFloat(row.extra_tomorrow || 0);
+  const dailyNeed = parseFloat(row.daily_milk_needed || 0);
+
+  if (!employeeMilkMap[empId]) {
+    employeeMilkMap[empId] = {
+      employee_id: empId,
+      estimated_cow_milk: 0,
+      estimated_buffalo_milk: 0
+    };
+  }
+
+  if (row.will_get_cow_milk_tomorrow == 1) {
+    console.log(`Adding ${extraTomorrow || dailyNeed} cow milk for emp ${empId}`);
+    employeeMilkMap[empId].estimated_cow_milk += extraTomorrow > 0 ? extraTomorrow : dailyNeed;
+  }
+
+  if (row.will_get_buffalo_milk_tomorrow == 1) {
+    console.log(`Adding ${extraTomorrow || dailyNeed} buffalo milk for emp ${empId}`);
+    employeeMilkMap[empId].estimated_buffalo_milk += extraTomorrow > 0 ? extraTomorrow : dailyNeed;
+  }
+});
+
+
+    const result = Object.values(employeeMilkMap);
+    res.json({ success: true, data: result });
+  });
+});
+
+
+
+// In your backend (Node.js + Express + MySQL)
+router.get('/api/owner-dashboard-summary', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const sql = `
+    SELECT 
+      dr.customer_id,
+      dr.got_cow_milk_today,
+      dr.got_buffalo_milk_today,
+      dr.extra_today,
+      c.milk_category,
+      c.daily_milk_needed
+    FROM daily_report dr
+    JOIN customer c ON dr.customer_id = c.id
+    WHERE DATE(dr.created_at) = ?
+  `;
+
+  db.query(sql, [today], (err, results) => {
+    if (err) {
+      console.error("Dashboard summary error:", err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    let total_cow_milk = 0;
+    let total_buffalo_milk = 0;
+
+    // console.log("Results fetched:",results, results.length, "rows");
+    results.forEach(row => {
+     
+      if (row.got_cow_milk_today == 1) {
+        total_cow_milk += Number(row.extra_today);
+        total_cow_milk += Number(row.daily_milk_needed);
+      }
+
+      if (row.got_buffalo_milk_today == 1) {
+        total_buffalo_milk += Number(row.extra_today);
+        total_buffalo_milk += Number(row.daily_milk_needed);
+      }
+    });
+
+    res.json({
+      success: true,
+      total_cow_milk,
+      total_buffalo_milk,
+      total: total_cow_milk + total_buffalo_milk,
+    });
+  });
+});
+
+
+
+
+
+
+
+// GET: /api/employee-milk-today/:employeeId
+router.get('/api/employee-milk-today/:employeeId', async (req, res) => {
+  const { employeeId } = req.params;
+
   try {
     const [rows] = await db.execute(
-      `SELECT employee_id FROM assignmilk WHERE assigned_date = CURDATE()`
+      `SELECT 
+         cow_milk, 
+         buffalo_milk, 
+         extra_cow_milk, 
+         extra_buffalo_milk 
+       FROM assignmilk 
+       WHERE employee_id = ? AND assigned_date = CURDATE()`,
+      [employeeId]
     );
-    res.json({ success: true, assigned: rows });
+
+    if (rows.length === 0) {
+      return res.json({ success: true, data: null });
+    }
+
+    const data = rows[0];
+    const total =
+      (data.cow_milk || 0) +
+      (data.buffalo_milk || 0) +
+      (data.extra_cow_milk || 0) +
+      (data.extra_buffalo_milk || 0);
+
+    res.json({ success: true, data: { ...data, total } });
   } catch (err) {
-    console.error('Fetch assigned milk error:', err);
+    console.error('Milk fetch error:', err);
     res.status(500).json({ success: false, message: 'Database error.' });
   }
 });
-
-
 
 
 export default router;

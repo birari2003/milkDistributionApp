@@ -136,13 +136,6 @@ export default function LoginScreen({ navigation }) {
 
             <Button title="Login" onPress={handleLogin} />
 
-            {/* <Text
-              style={styles.signupText}
-              onPress={() => navigation.navigate('OwnerSignup')}
-            >
-              New owner? Sign up here
-            </Text> */}
-            
             <TouchableOpacity>
               <Text style={styles.forgetText}>Forgot password?</Text>
             </TouchableOpacity>
