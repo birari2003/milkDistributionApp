@@ -1,211 +1,3 @@
-// import React, { useEffect, useState } from 'react';
-
-// import {
-//   View,
-//   Text,
-//   TextInput,
-//   Button,
-//   StyleSheet,
-//   ScrollView,
-//   FlatList,
-// } from 'react-native';
-// import { Picker } from '@react-native-picker/picker';
-
-// const AddCustomer = () => {
-//   const [areas, setAreas] = useState([]);
-
-// const [form, setForm] = useState({
-//   name: '',
-//   phone: '',
-//   password: '',
-//   address: '',
-//   area_id: '',
-//   daily_milk_needed: '',
-//   extra_milk_if_needed: '',
-//   milk_category: '',
-//   delivery_time: '', // <-- new
-// });
-
-
-
-//   const [errors, setErrors] = useState({});
-//   const [message, setMessage] = useState('');
-
-//   useEffect(() => {
-//     fetch('http://192.168.43.175:3000/api/areas')
-//       .then(res => res.json())
-//       .then(data => {
-//         if (data.success) {
-//           setAreas(data.areas);
-//         }
-//       })
-//       .catch(err => console.error(err));
-//   }, []);
-
-//   const validate = () => {
-//     const errs = {};
-
-//     if (!form.name.trim()) errs.name = 'Name is required.';
-//     if (!form.phone.trim()) errs.phone = 'Phone number is required.';
-//     else if (!/^\d{10}$/.test(form.phone)) errs.phone = 'Phone must be 10 digits.';
-//     if (!form.password) errs.password = 'Password is required.';
-//     else if (form.password.length < 6) errs.password = 'Min 6 characters required.';
-//     if (!form.address.trim()) errs.address = 'Address is required.';
-//     if (!form.area_id) errs.area_id = 'Please select an area.';
-//     if (form.daily_milk_needed && isNaN(Number(form.daily_milk_needed)))
-//       errs.daily_milk_needed = 'Must be a number.';
-//     if (form.extra_milk_if_needed && isNaN(Number(form.extra_milk_if_needed)))
-//       errs.extra_milk_if_needed = 'Must be a number.';
-//     if (!form.delivery_time) errs.delivery_time = 'Please select delivery time.';
-
-
-//     setErrors(errs);
-//     return Object.keys(errs).length === 0;
-//   };
-
-//   const handleSubmit = async () => {
-//     if (!validate()) return;
-
-//     try {
-//       const response = await fetch('http://192.168.43.175:3000/api/add-customer', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify(form),
-//       });
-
-//       const data = await response.json();
-//       if (data.success) {
-//         setMessage('✅ Customer added successfully!');
-//         setForm({
-//           name: '', phone: '', password: '', address: '',
-//           area_id: '', daily_milk_needed: '', extra_milk_if_needed: '',
-//         });
-//         setErrors({});
-//       } else {
-//         setMessage('❌ Failed to add customer.');
-//       }
-//     } catch (err) {
-//       setMessage('❌ Server error. Please try again.');
-//     }
-//   };
-
-//   return (
-//     <ScrollView style={styles.container}>
-//       <Text style={styles.title}>Add Customer</Text>
-
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Name"
-//         value={form.name}
-//         onChangeText={text => setForm({ ...form, name: text })}
-//       />
-//       {errors.name && <Text style={styles.error}>{errors.name}</Text>}
-
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Phone"
-//         keyboardType="phone-pad"
-//         value={form.phone}
-//         onChangeText={text => setForm({ ...form, phone: text.replace(/[^0-9]/g, '') })}
-//       />
-//       {errors.phone && <Text style={styles.error}>{errors.phone}</Text>}
-
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Password"
-//         secureTextEntry
-//         value={form.password}
-//         onChangeText={text => setForm({ ...form, password: text })}
-//       />
-//       {errors.password && <Text style={styles.error}>{errors.password}</Text>}
-
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Address"
-//         value={form.address}
-//         onChangeText={text => setForm({ ...form, address: text })}
-//       />
-//       {errors.address && <Text style={styles.error}>{errors.address}</Text>}
-
-//       <Text style={styles.label}>Select Area</Text>
-//       <Picker
-//         selectedValue={form.area_id}
-//         onValueChange={itemValue => setForm({ ...form, area_id: itemValue })}
-//       >
-//         <Picker.Item label="Select Area" value="" />
-//         {areas.map(area => (
-//           <Picker.Item key={area.id} label={area.landmark} value={area.id} />
-//         ))}
-//       </Picker>
-//       {errors.area_id && <Text style={styles.error}>{errors.area_id}</Text>}
-// <Text style={styles.label}>Preferred Delivery Time</Text>
-// <Picker
-//   selectedValue={form.delivery_time}
-//   onValueChange={value => setForm({ ...form, delivery_time: value })}
-// >
-//   <Picker.Item label="Select Time" value="" />
-//   <Picker.Item label="Morning" value="morning" />
-//   <Picker.Item label="Evening" value="evening" />
-// </Picker>
-// {errors.delivery_time && <Text style={styles.error}>{errors.delivery_time}</Text>}
-
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Daily Milk Needed (Litres)"
-//         keyboardType="numeric"
-//         value={form.daily_milk_needed}
-//         onChangeText={text => setForm({ ...form, daily_milk_needed: text })}
-//       />
-//       {errors.daily_milk_needed && <Text style={styles.error}>{errors.daily_milk_needed}</Text>}
-
-//       <Text style={styles.label}>Milk Category</Text>
-//       <Picker
-//         selectedValue={form.milk_category}
-//         onValueChange={value => setForm({ ...form, milk_category: value })}
-//       >
-//         <Picker.Item label="Select Milk Category" value="" />
-//         <Picker.Item label="Cow's Milk" value="cows" />
-//         <Picker.Item label="Buffalo's Milk" value="buffalo" />
-//       </Picker>
-//       {errors.milk_category && <Text style={styles.error}>{errors.milk_category}</Text>}
-
-
-//       <Button title="Add Customer" onPress={handleSubmit} />
-
-//       {message !== '' && (
-//         <Text style={styles.successMessage}>{message}</Text>
-//       )}
-//     </ScrollView>
-
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: { padding: 20 },
-//   title: { fontSize: 24, textAlign: 'center', marginVertical: 20 },
-//   input: {
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     padding: 10,
-//     marginBottom: 10,
-//     borderRadius: 5,
-//   },
-//   label: { marginTop: 10, marginBottom: 5, fontWeight: 'bold' },
-//   error: { color: 'red', marginBottom: 10, marginLeft: 5, fontSize: 13 },
-//   successMessage: {
-//     marginTop: 20,
-//     textAlign: 'center',
-//     color: 'green',
-//     fontWeight: 'bold',
-//     fontSize: 16,
-//   },
-// });
-
-// export default AddCustomer;
-
-
-
-
 import {
   View,
   Text,
@@ -217,45 +9,22 @@ import {
   ScrollView,
   Pressable,
   FlatList,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect } from 'react';
+
 const genderColors = {
-  Male: '#2563eb',      // blue
-  Female: '#f472b6',    // pink
-  Other: '#a21caf',     // purple
+  Male: '#2563eb',
+  Female: '#f472b6',
+  Other: '#a21caf',
 };
 
 const milkColors = {
-  cow: '#22c55e',       // green
-  buffalo: '#a21caf',   // purple
+  cow: '#22c55e',
+  buffalo: '#a21caf',
 };
-
-const EMPLOYEE_REGION = 'MIDC Area'; // Static region for all customers
-
-const STATIC_CUSTOMERS = [
-  {
-    id: '1',
-    name: 'Aashish Kumar',
-    mobile: '9876543210',
-    gender: 'Male',
-    address: '123 Main Street',
-    cowMilk: '2',
-    buffaloMilk: '1',
-    region: EMPLOYEE_REGION,
-  },
-  {
-    id: '2',
-    name: 'Vedant',
-    mobile: '9123456789',
-    gender: 'Female',
-    address: '45 Rose Lane',
-    cowMilk: '1',
-    buffaloMilk: '2',
-    region: EMPLOYEE_REGION,
-  },
- 
-];
 
 export default function AddCustomerScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -265,47 +34,129 @@ export default function AddCustomerScreen() {
     gender: '',
     address: '',
     cowMilk: '',
+    password: '',
     buffaloMilk: '',
-    region: EMPLOYEE_REGION,
+    delivery_time: '',
   });
-  const [customers, setCustomers] = useState(STATIC_CUSTOMERS);
+  const [customers, setCustomers] = useState([]);
+  const [EMPLOYEE, setEMPLOYEE] = useState(null);
 
   const handleChange = (field, value) => {
     setForm({ ...form, [field]: value });
   };
 
-  const handleAddCustomer = () => {
-    if (!form.name || !form.mobile || !form.gender) return;
-    setCustomers([
-      ...customers,
-      {
-        ...form,
-        id: Date.now().toString(),
-      },
-    ]);
-    setModalVisible(false);
-    setForm({
-      name: '',
-      mobile: '',
-      gender: '',
-      address: '',
-      cowMilk: '',
-      buffaloMilk: '',
-      region: EMPLOYEE_REGION,
-    });
+  const fetchEmployeeData = async () => {
+    const emp = await AsyncStorage.getItem('employee');
+    if (emp) {
+      const parsed = JSON.parse(emp);
+      setEMPLOYEE(parsed);
+      fetchCustomers(parsed);
+    }
+  };
+
+  useEffect(() => {
+    const fetchEmployeeAndCustomers = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user'); // or 'employee' if you store with that key
+        const user = JSON.parse(userStr);
+
+        if (!user?.id) {
+          alert('Employee ID not found');
+          return;
+        }
+
+        setEMPLOYEE(user); // Store full employee object if needed
+
+        // Now fetch customers under this employee
+        const res = await fetch(`http://192.168.43.175:3000/api/customers?employee_id=${user.id}`);
+        const data = await res.json();
+
+        if (data.success) {
+          setCustomers(data.customers);
+        } else {
+          alert('Failed to load customers');
+        }
+      } catch (err) {
+        console.error('Error fetching employee/customers:', err);
+        alert('Something went wrong');
+      }
+    };
+
+    fetchEmployeeAndCustomers();
+  }, []);
+
+
+  useEffect(() => {
+    fetchEmployeeData();
+  }, []);
+
+  const handleAddCustomer = async () => {
+    if (!EMPLOYEE) return;
+
+    if (!form.name || !form.mobile || !form.gender || !form.delivery_time || !form.password) {
+      return Alert.alert('All required fields must be filled!');
+    }
+
+    const milk_category =
+      form.cowMilk && form.buffaloMilk
+        ? 'both'
+        : form.cowMilk
+          ? 'cow'
+          : form.buffaloMilk
+            ? 'buffalo'
+            : '';
+
+    if (!milk_category) return alert('Please enter milk quantity');
+
+    const daily_milk_needed =
+      parseFloat(form.cowMilk || 0) + parseFloat(form.buffaloMilk || 0);
+
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/add-customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.mobile,
+          gender: form.gender.toLowerCase(),
+          address: form.address,
+          area_id: EMPLOYEE.area_id,
+          employee_assigned: EMPLOYEE.id,
+          daily_milk_needed,
+          milk_category,
+          password: form.password,
+          delivery_time: form.delivery_time,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Customer added!');
+        setForm({
+          name: '',
+          mobile: '',
+          gender: '',
+          address: '',
+          password: '',
+          cowMilk: '',
+          buffaloMilk: '',
+          delivery_time: '',
+        });
+        setModalVisible(false);
+        fetchCustomers(EMPLOYEE);
+      } else {
+        Alert.alert('Failed:', data.message || 'Unknown error');
+      }
+    } catch (e) {
+      Alert.alert('Server error');
+    }
   };
 
   const renderCustomer = ({ item }) => (
     <View style={styles.customerCard}>
       <View style={styles.customerIconBox}>
         <MaterialCommunityIcons
-          name={
-            item.gender === 'Male'
-              ? 'account'
-              : item.gender === 'Female'
-              ? 'account'
-              : 'account-circle'
-          }
+          name="account"
           size={32}
           color={genderColors[item.gender] || '#a21caf'}
         />
@@ -313,24 +164,17 @@ export default function AddCustomerScreen() {
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.customerName}>{item.name}</Text>
         <Text style={styles.customerMobile}>
-          <MaterialCommunityIcons name="phone" size={15} color="#60a5fa" /> {item.mobile}
+          <MaterialCommunityIcons name="phone" size={15} color="#60a5fa" />{' '}
+          {item.phone}
         </Text>
         <Text style={styles.customerAddress}>{item.address}</Text>
         <Text style={styles.customerRegion}>
-          <MaterialCommunityIcons name="map-marker" size={14} color="#a21caf" /> {item.region}
+          <MaterialCommunityIcons name="map-marker" size={14} color="#a21caf" />{' '}
+          {item.area_name}
         </Text>
-        <View style={styles.milkRow}>
-          <View style={styles.milkTypeBox}>
-            <MaterialCommunityIcons name="cow" size={18} color={milkColors.cow} />
-            <Text style={[styles.milkTypeLabel, { color: milkColors.cow }]}>Cow:</Text>
-            <Text style={[styles.milkTypeValue, { color: milkColors.cow }]}>{item.cowMilk || 0} L</Text>
-          </View>
-          <View style={styles.milkTypeBox}>
-            <MaterialCommunityIcons name="cow" size={18} color={milkColors.buffalo} />
-            <Text style={[styles.milkTypeLabel, { color: milkColors.buffalo }]}>Buffalo:</Text>
-            <Text style={[styles.milkTypeValue, { color: milkColors.buffalo }]}>{item.buffaloMilk || 0} L</Text>
-          </View>
-        </View>
+        <Text style={styles.customerAddress}>
+          ⏰ Delivery: {item.delivery_time}
+        </Text>
       </View>
     </View>
   );
@@ -341,24 +185,16 @@ export default function AddCustomerScreen() {
         <MaterialCommunityIcons name="account-plus" size={28} color="#2563eb" />
         <Text style={styles.headerTitle}>Add Customer</Text>
       </View>
-      <TouchableOpacity
-        style={styles.addBtn}
-        onPress={() => setModalVisible(true)}
-      >
+      <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
         <MaterialCommunityIcons name="plus" size={22} color="#fff" />
         <Text style={styles.addBtnText}>Add Customer</Text>
       </TouchableOpacity>
 
       <FlatList
         data={customers}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderCustomer}
         contentContainerStyle={{ padding: 16, paddingBottom: 30 }}
-        ListEmptyComponent={
-          <Text style={{ textAlign: 'center', color: '#aaa', marginTop: 30 }}>
-            No customers added yet.
-          </Text>
-        }
       />
 
       <Modal
@@ -367,11 +203,8 @@ export default function AddCustomerScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setModalVisible(false)}
-        >
-          <Pressable style={styles.modalBox} onPress={() => {}}>
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalBox}>
             <ScrollView>
               <Text style={styles.modalTitle}>Add Customer</Text>
               {/* Name */}
@@ -382,7 +215,7 @@ export default function AddCustomerScreen() {
                   placeholder="Name"
                   placeholderTextColor="#2563eb"
                   value={form.name}
-                  onChangeText={text => handleChange('name', text)}
+                  onChangeText={(text) => handleChange('name', text)}
                 />
               </View>
               {/* Mobile */}
@@ -395,40 +228,36 @@ export default function AddCustomerScreen() {
                   keyboardType="phone-pad"
                   maxLength={10}
                   value={form.mobile}
-                  onChangeText={text => handleChange('mobile', text)}
+                  onChangeText={(text) => handleChange('mobile', text)}
+                />
+              </View>
+              {/* Password */}
+              <View style={[styles.inputGroup, { flexDirection: 'row', alignItems: 'center' }]}>
+                <MaterialCommunityIcons name="lock" size={22} color="#2563eb" style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.inputBox, { color: '#2563eb', flex: 1 }]}
+                  placeholder="Password"
+                  placeholderTextColor="#2563eb"
+                  secureTextEntry
+                  value={form.password}
+                  onChangeText={(text) => handleChange('password', text)}
                 />
               </View>
               {/* Gender */}
               <View style={[styles.inputGroup, { flexDirection: 'row', alignItems: 'center' }]}>
                 <MaterialCommunityIcons name="gender-male-female" size={22} color="#2563eb" style={{ marginRight: 8 }} />
                 <View style={[styles.genderRow, { flex: 1 }]}>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBtn,
-                      form.gender === 'Male' && styles.genderBtnActive,
-                    ]}
-                    onPress={() => handleChange('gender', 'Male')}
-                  >
-                    <Text style={form.gender === 'Male' ? styles.genderTextActive : [styles.genderText, { color: genderColors.Male }]}>Male</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBtn,
-                      form.gender === 'Female' && styles.genderBtnActive,
-                    ]}
-                    onPress={() => handleChange('gender', 'Female')}
-                  >
-                    <Text style={form.gender === 'Female' ? styles.genderTextActive : [styles.genderText, { color: genderColors.Female }]}>Female</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderBtn,
-                      form.gender === 'Other' && styles.genderBtnActive,
-                    ]}
-                    onPress={() => handleChange('gender', 'Other')}
-                  >
-                    <Text style={form.gender === 'Other' ? styles.genderTextActive : [styles.genderText, { color: genderColors.Other }]}>Other</Text>
-                  </TouchableOpacity>
+                  {['Male', 'Female', 'Other'].map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      style={[styles.genderBtn, form.gender === g && styles.genderBtnActive]}
+                      onPress={() => handleChange('gender', g)}
+                    >
+                      <Text style={form.gender === g ? styles.genderTextActive : [styles.genderText, { color: genderColors[g] }]}>
+                        {g}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
               {/* Address */}
@@ -439,22 +268,25 @@ export default function AddCustomerScreen() {
                   placeholder="Address"
                   placeholderTextColor="#2563eb"
                   value={form.address}
-                  onChangeText={text => handleChange('address', text)}
-                  multiline
+                  onChangeText={(text) => handleChange('address', text)}
                 />
               </View>
-              {/* Region */}
+              {/* Delivery Time Dropdown */}
               <View style={[styles.inputGroup, { flexDirection: 'row', alignItems: 'center' }]}>
-                <MaterialCommunityIcons name="map-marker" size={22} color="#2563eb" style={{ marginRight: 8 }} />
-                <TextInput
-                  style={[styles.inputBox, { backgroundColor: '#f3f4f6', color: '#2563eb', flex: 1 }]}
-                  value={EMPLOYEE_REGION}
-                  editable={false}
-                  placeholder="Region"
-                  placeholderTextColor="#2563eb"
-                />
+                <MaterialCommunityIcons name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />
+                <TouchableOpacity
+                  style={[styles.inputBox, { flex: 1 }]}
+                  onPress={() => {
+                    const next = form.delivery_time === 'morning' ? 'evening' : 'morning';
+                    handleChange('delivery_time', next);
+                  }}
+                >
+                  <Text style={{ color: '#2563eb' }}>
+                    {form.delivery_time ? form.delivery_time.charAt(0).toUpperCase() + form.delivery_time.slice(1) : 'Select Delivery Time'}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              {/* Cow & Buffalo in one row */}
+              {/* Cow & Buffalo Milk */}
               <View style={[styles.inputGroup, { flexDirection: 'row', gap: 10 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.inputLabel, { color: '#2563eb' }]}>Cow Milk (L/day)</Text>
@@ -464,8 +296,7 @@ export default function AddCustomerScreen() {
                     placeholderTextColor="#2563eb"
                     keyboardType="numeric"
                     value={form.cowMilk}
-                    onChangeText={text => handleChange('cowMilk', text)}
-                    maxLength={3}
+                    onChangeText={(text) => handleChange('cowMilk', text)}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -476,21 +307,15 @@ export default function AddCustomerScreen() {
                     placeholderTextColor="#2563eb"
                     keyboardType="numeric"
                     value={form.buffaloMilk}
-                    onChangeText={text => handleChange('buffaloMilk', text)}
-                    maxLength={3}
+                    onChangeText={(text) => handleChange('buffaloMilk', text)}
                   />
                 </View>
               </View>
-              <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={handleAddCustomer}
-              >
+              {/* Save */}
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAddCustomer}>
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setModalVisible(false)}
-              >
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
             </ScrollView>

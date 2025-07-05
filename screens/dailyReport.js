@@ -13,17 +13,34 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import React, { useEffect, useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
 
 export default function OwnerInventory({ navigation }) {
   const [summary, setSummary] = useState({ cow: 0, buffalo: 0, total: 0 });
   const [returned, setReturned] = useState({ cow: 0, buffalo: 0, total: 0 });
   const [employeeData, setEmployeeData] = useState([]);
   const [tomorrowModal, setTomorrowModal] = useState(false);
+
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+
+  const [showPicker, setShowPicker] = useState(false);
+  const [activePicker, setActivePicker] = useState(null); // 'from' or 'to'
+
+
+
   const { width, height } = useWindowDimensions();
   const modalWidth = width > 600 ? width * 0.7 : width * 0.95;
   const modalHeight = height * 0.8;
 
-  const EMPLOYEE_IDS = [1, 2, 3, 4]; // static for now
+  const formatDate = (date) => {
+    if (!date) return 'Select Date';
+    const d = new Date(date);
+    return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`;
+  };
+
 
   useEffect(() => {
     fetchSummary();
@@ -56,25 +73,25 @@ export default function OwnerInventory({ navigation }) {
   };
 
   const fetchEmployeeData = async () => {
-  try {
-    const res = await fetch('http://192.168.43.175:3000/api/employee-milk-summary-dash');
-    const data = await res.json();
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/employee-milk-summary-dash');
+      const data = await res.json();
 
-    if (data.success && Array.isArray(data.data)) {
-      const formatted = data.data.map(emp => ({
-        name: emp.employee_name,
-        phone: emp.employee_phone,
-        cow: emp.total_cow_milk,
-        buffalo: emp.total_buffalo_milk
-      }));
-      setEmployeeData(formatted);
-    } else {
-      console.error('Unexpected data structure from API');
+      if (data.success && Array.isArray(data.data)) {
+        const formatted = data.data.map(emp => ({
+          name: emp.employee_name,
+          phone: emp.employee_phone,
+          cow: emp.total_cow_milk,
+          buffalo: emp.total_buffalo_milk
+        }));
+        setEmployeeData(formatted);
+      } else {
+        console.error('Unexpected data structure from API');
+      }
+    } catch (err) {
+      console.error('Employee summary fetch error:', err);
     }
-  } catch (err) {
-    console.error('Employee summary fetch error:', err);
-  }
-};
+  };
 
 
   return (
@@ -96,6 +113,38 @@ export default function OwnerInventory({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 }}>
+          <TouchableOpacity
+            style={styles.datePickerBox}
+            onPress={() => { setActivePicker('from'); setShowPicker(true); }}
+          >
+            <MaterialCommunityIcons name="calendar" size={20} color="#2563eb" />
+            <Text style={styles.datePickerText}>{formatDate(fromDate)}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.datePickerBox}
+            onPress={() => { setActivePicker('to'); setShowPicker(true); }}
+          >
+            <MaterialCommunityIcons name="calendar" size={20} color="#2563eb" />
+            <Text style={styles.datePickerText}>{formatDate(toDate)}</Text>
+          </TouchableOpacity>
+        </View>
+
+
+        <DateTimePickerModal
+          isVisible={showPicker}
+          mode="date"
+          onConfirm={(date) => {
+            if (activePicker === 'from') setFromDate(date);
+            else if (activePicker === 'to') setToDate(date);
+            setShowPicker(false);
+          }}
+          onCancel={() => setShowPicker(false)}
+        />
+
+
+
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitleBlack}>
             <MaterialCommunityIcons name="calendar-today" size={20} color="#2563eb" /> Cow and Buffalo
@@ -103,17 +152,18 @@ export default function OwnerInventory({ navigation }) {
           <Text style={styles.totalLiters}>{summary.total} Liters</Text>
           <View style={styles.milkRow}>
             <View style={styles.milkTypeBox}>
-              <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+              <Text style={{ fontSize: 24 }}>🐄</Text>
               <Text style={styles.milkTypeLabel}>Cow Milk</Text>
               <Text style={styles.milkTypeValue}>{summary.cow} L</Text>
             </View>
             <View style={styles.milkTypeBox}>
-              <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+              <Text style={{ fontSize: 24 }}>🐃</Text>
               <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
               <Text style={styles.milkTypeValue}>{summary.buffalo} L</Text>
             </View>
           </View>
         </View>
+
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitleBlack}>
@@ -122,12 +172,12 @@ export default function OwnerInventory({ navigation }) {
           <Text style={styles.totalLiters}>{returned.total} Liters</Text>
           <View style={styles.milkRow}>
             <View style={styles.milkTypeBox}>
-              <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+              <Text style={{ fontSize: 24 }}>🐄</Text>
               <Text style={styles.milkTypeLabel}>Cow Milk</Text>
               <Text style={styles.milkTypeValue}>{returned.cow} L</Text>
             </View>
             <View style={styles.milkTypeBox}>
-              <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+              <Text style={{ fontSize: 24 }}>🐃</Text>
               <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
               <Text style={styles.milkTypeValue}>{returned.buffalo} L</Text>
             </View>
@@ -143,14 +193,14 @@ export default function OwnerInventory({ navigation }) {
           <Text style={styles.totalLiters}>{employeeData.reduce((acc, e) => acc + e.cow + e.buffalo, 0)} Liters</Text>
           <View style={styles.milkRow}>
             <View style={styles.milkTypeBox}>
-              <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+              <Text style={{ fontSize: 24 }}>🐄</Text>
               <Text style={styles.milkTypeLabel}>Cow Milk</Text>
               <Text style={styles.milkTypeValue}>
                 {employeeData.reduce((acc, e) => acc + e.cow, 0)} L
               </Text>
             </View>
             <View style={styles.milkTypeBox}>
-              <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+              <Text style={{ fontSize: 24 }}>🐃</Text>
               <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
               <Text style={styles.milkTypeValue}>
                 {employeeData.reduce((acc, e) => acc + e.buffalo, 0)} L
@@ -167,19 +217,19 @@ export default function OwnerInventory({ navigation }) {
               styles.regionModalBox,
               { width: modalWidth, height: modalHeight, maxHeight: modalHeight },
             ]}
-            onPress={() => {}}
+            onPress={() => { }}
           >
             <Text style={styles.regionModalTitleBlack}>Tomorrow's Distribution</Text>
             <View style={styles.milkRow}>
               <View style={styles.milkTypeBox}>
-                <MaterialCommunityIcons name="cow" size={22} color="#22c55e" />
+                <Text style={{ fontSize: 24 }}>🐄</Text>
                 <Text style={styles.milkTypeLabel}>Cow Milk</Text>
                 <Text style={styles.milkTypeValue}>
                   {employeeData.reduce((acc, e) => acc + e.cow, 0)} L
                 </Text>
               </View>
               <View style={styles.milkTypeBox}>
-                <MaterialCommunityIcons name="cow" size={22} color="#facc15" />
+                <Text style={{ fontSize: 24 }}>🐃</Text>
                 <Text style={styles.milkTypeLabel}>Buffalo Milk</Text>
                 <Text style={styles.milkTypeValue}>
                   {employeeData.reduce((acc, e) => acc + e.buffalo, 0)} L
@@ -239,6 +289,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 18,
   },
+  datePickerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: '#f8fafc',
+  },
+  datePickerText: {
+    marginLeft: 10,
+    color: '#2563eb',
+    fontWeight: 'bold',
+  },
+
   headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -279,6 +347,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     padding: 10,
     elevation: 1,
+    border
   },
   milkTypeLabel: {
     fontSize: 14,

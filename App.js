@@ -7,17 +7,7 @@ import OwnerLogin from './screens/OwnerLogin';
 import OwnerSignup from './screens/OwnerSignup';
 import DrawerMenu from './components/DrawerMenu';
 import DrawerMenuEmployee from './components/DrawerMenuEmployee';
-import OwnerDashboard from './screens/OwnerDashboard';
-import HomeScreen from './screens/HomeScreen';
-import AreaScreen from './screens/addArea';
-import AddEmployee from './screens/ManageEmployees';
-import EmployeeDashboard from './screens/EmployeeDashboard';
-import AddCustomer from './screens/addCustomer';
 import DrawerMenuCustomer from './components/DrawerMenuCustomer';
-import seeCustomer from './screens/seeCustomer';
-import DailyReport from './screens/dailyReport';
-import EmpInventoryScreen from './screens/EmployeeInventory';
-import CustDeliveryDetails from './screens/customerReport';
 import OnboardingScreen from './screens/OnboardingScreen';
 
 export const AuthContext = createContext();
@@ -62,17 +52,6 @@ export default function App() {
               <Stack.Screen name="OwnerSignup" component={OwnerSignup} />
             </>
           )}
-          {/* Common screens */}
-          <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="addArea" component={AreaScreen} />
-          <Stack.Screen name="ManageEmployees" component={AddEmployee} />
-          <Stack.Screen name="EmployeeDashboard" component={EmployeeDashboard} />
-          <Stack.Screen name="addCustomer" component={AddCustomer} />
-          <Stack.Screen name="seeCustomer" component={seeCustomer} />
-          <Stack.Screen name="DailyReport" component={DailyReport} />
-          <Stack.Screen name="EmpInventoryScreen" component={EmpInventoryScreen} />
-          <Stack.Screen name="CustDeliveryDetails" component={CustDeliveryDetails} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthContext.Provider>

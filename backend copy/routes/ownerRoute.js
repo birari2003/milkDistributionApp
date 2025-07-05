@@ -304,4 +304,67 @@ router.get('/api/employee-milk-today/:employeeId', async (req, res) => {
 });
 
 
+router.post('/api/pay-salary', (req, res) => {
+  const {
+    employee_id,
+    employee_name,
+    area_id,           // previously zone
+    contact,           // previously mobile
+    amount,
+    pay_mode,
+    month,
+  } = req.body;
+
+  if (!employee_id || !employee_name || !amount || !pay_mode || !month) {
+    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  }
+
+  const sql = `
+    INSERT INTO employee_salary
+    (employee_id, employee_name, area_id, contact, amount, pay_mode, month)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(sql, [employee_id, employee_name, area_id, contact, amount, pay_mode, month], (err) => {
+    if (err) {
+      console.error('Salary payment error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, message: 'Salary paid successfully' });
+  });
+});
+router.get('/api/salary-history', (req, res) => {
+  const sql = `
+  SELECT 
+    es.id,
+    es.employee_id,
+    es.employee_name,
+    es.amount,
+    es.pay_mode,
+    es.status,
+    es.month,
+    es.contact,
+    a.area_name,
+    es.created_at
+  FROM employee_salary es
+  LEFT JOIN area a ON es.area_id = a.id
+  ORDER BY es.created_at DESC
+  LIMIT 50
+`;
+
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Fetch salary history error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, history: results });
+  });
+});
+
+
+
+
 export default router;

@@ -37,6 +37,8 @@ export default function AddCustomer() {
   const [dropdowns, setDropdowns] = useState({
     area: false,
     employee: false,
+    gender: false,
+    delivery_time: false,
   });
 
   const [form, setForm] = useState({
@@ -125,6 +127,7 @@ export default function AddCustomer() {
           employee_assigned: form.employee_id,
           milk_category: milkCategoryValue,
           delivery_time: form.delivery_time,
+          gender: form.gender,
         }),
       });
       const data = await res.json();
@@ -141,6 +144,7 @@ export default function AddCustomer() {
           daily_milk_needed: '',
           milk_category: [],
           delivery_time: '',
+          gender: '',
         });
       } else {
         alert('Failed to add: ' + (data.message || 'Unknown error'));
@@ -219,21 +223,35 @@ export default function AddCustomer() {
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.phone}>{item.phone}</Text>
-            <Text style={styles.address}>{item.address}</Text>
-            <Text style={styles.deliveryTime}>Delivery: {item.delivery_time}</Text>
-            <Text style={styles.meta}>Area: {item.area_name}</Text>
-            <Text style={styles.meta}>Employee: {item.employee_name}</Text>
+            <View style={styles.rowBetween}>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.phone}>📞 {item.phone}</Text>
+            </View>
+
+            <Text style={styles.address}>🏠 {item.address}</Text>
+
+            <View style={styles.rowBetween}>
+              <Text style={styles.deliveryTime}>🕒 Delivery: {item.delivery_time}</Text>
+              <Text style={styles.meta}>📍 {item.area_name}</Text>
+            </View>
+
+            <Text style={styles.meta}>👤 Assigned: {item.employee_name}</Text>
           </View>
         )}
       />
 
+
       {/* Modal */}
       <Modal visible={formVisible} transparent animationType="fade" onRequestClose={() => setFormVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.centeredView}>
-            <Pressable style={styles.formBox}>
+        <Pressable style={styles.modalOverlay} onPress={() => setFormVisible(false)}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.centeredView}
+          >
+            <Pressable
+              style={styles.formBox}
+              onPress={(e) => e.stopPropagation()} // Prevent dismiss when pressing inside the form
+            >
               <ScrollView keyboardShouldPersistTaps="handled">
                 <Text style={styles.formTitle}>Add Customer</Text>
 
@@ -250,7 +268,13 @@ export default function AddCustomer() {
                 {dropdowns.area && (
                   <View style={styles.dropdownList}>
                     {areas.map(a => (
-                      <TouchableOpacity key={a.id} style={styles.dropdownItem} onPress={() => { setForm({ ...form, area_id: a.id }); setDropdowns({ ...dropdowns, area: false }); }}>
+                      <TouchableOpacity key={a.id} style={styles.dropdownItem} onPress={() => {
+                        setForm({ ...form, area_id: a.id, employee_id: '' });
+                        const emps = employees.filter(e => e.area_id === a.id);
+                        setFilteredEmployees(emps);
+                        setDropdowns({ ...dropdowns, area: false });
+                      }}
+                      >
                         <Text style={styles.dropdownText}>{a.landmark}</Text>
                       </TouchableOpacity>
                     ))}
@@ -272,16 +296,73 @@ export default function AddCustomer() {
                   </View>
                 )}
 
-                <Picker
-                  selectedValue={form.delivery_time}
-                  onValueChange={(itemValue) =>
-                    setForm({ ...form, delivery_time: itemValue })
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() =>
+                    setDropdowns({ ...dropdowns, delivery_time: !dropdowns.delivery_time })
                   }
                 >
-                  <Picker.Item label="Select Delivery Time" value="" />
-                  <Picker.Item label="Morning" value="morning" />
-                  <Picker.Item label="Evening" value="evening" />
-                </Picker>
+                  <Text style={styles.dropdownText}>
+                    {form.delivery_time
+                      ? form.delivery_time.charAt(0).toUpperCase() +
+                      form.delivery_time.slice(1)
+                      : 'Select Delivery Time'}
+                  </Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
+                </TouchableOpacity>
+
+                {dropdowns.delivery_time && (
+                  <View style={styles.dropdownList}>
+                    {['morning', 'evening'].map((time) => (
+                      <TouchableOpacity
+                        key={time}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setForm({ ...form, delivery_time: time });
+                          setDropdowns({ ...dropdowns, delivery_time: false });
+                        }}
+                      >
+                        <Text style={styles.dropdownText}>
+                          {time.charAt(0).toUpperCase() + time.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setDropdowns({ ...dropdowns, gender: !dropdowns.gender })}
+                >
+                  <Text style={styles.dropdownText}>
+                    {form.gender
+                      ? form.gender.charAt(0).toUpperCase() + form.gender.slice(1)
+                      : 'Select Gender'}
+                  </Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#2563eb" />
+                </TouchableOpacity>
+
+                {dropdowns.gender && (
+                  <View style={styles.dropdownList}>
+                    {['male', 'female', 'other'].map((gender) => (
+                      <TouchableOpacity
+                        key={gender}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setForm({ ...form, gender });
+                          setDropdowns({ ...dropdowns, gender: false });
+                        }}
+                      >
+                        <Text style={styles.dropdownText}>
+                          {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+
 
                 <TextInput style={styles.dropdown} placeholder="Daily Milk Needed (L)" keyboardType="numeric" value={form.daily_milk_needed} onChangeText={t => setForm({ ...form, daily_milk_needed: t })} />
 
@@ -314,7 +395,7 @@ export default function AddCustomer() {
               </ScrollView>
             </Pressable>
           </KeyboardAvoidingView>
-        </View>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
@@ -349,6 +430,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginLeft: 6,
   },
+  pickerWrapper: {
+    backgroundColor: '#f1f5ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#c7d2fe',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+
+  picker: {
+    height: 50,
+    color: '#1e293b', // dark slate for readability
+    fontSize: 15,
+  },
+
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -426,40 +522,62 @@ const styles = StyleSheet.create({
     color: '#2563eb',
     fontWeight: '500',
   },
+
+
+
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#c2d5fe',
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     marginHorizontal: 12,
-    marginVertical: 6,
-    elevation: 2,
-    shadowColor: '#2563eb',
-    shadowOpacity: 0.06,
+    marginVertical: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
   },
+
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
   name: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1e3a8a',
   },
+
   phone: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#334155',
   },
+
   address: {
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: 13,
+    color: '#475569',
+    marginBottom: 6,
   },
+
   deliveryTime: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#0284c7',
     fontWeight: '500',
   },
+
   meta: {
     fontSize: 13,
     color: '#475569',
+    marginTop: 2,
   },
+
+
+
+
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(30,58,138,0.10)',

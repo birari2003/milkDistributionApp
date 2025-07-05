@@ -14,13 +14,13 @@ import { FontAwesome5 } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-const cowPrice = 56;
-const buffaloPrice = 70;
-
 export default function EmployeeDashboard({ route }) {
   const [total, setTotal] = useState(0);
   const [cowMilk, setCowMilk] = useState(0);
   const [buffaloMilk, setBuffaloMilk] = useState(0);
+   const [cowRate, setCowRate] = useState(0);
+    const [buffaloRate, setBuffaloRate] = useState(0);
+  
 
   const employee_id = route?.params?.employee_id || 1;
 
@@ -41,6 +41,20 @@ export default function EmployeeDashboard({ route }) {
       .catch(err => console.error('Failed to load milk summary', err));
   }, []);
 
+  useEffect(() => {
+      fetch('http://192.168.43.175:3000/api/get-latest-milk-price')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.latest) {
+            setCowRate(data.latest.cow_milk_price);
+            setBuffaloRate(data.latest.buffalo_milk_price);
+          }
+        })
+        .catch(err => {
+          console.error('Fetch price error:', err);
+        });
+    }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -57,13 +71,13 @@ export default function EmployeeDashboard({ route }) {
             <Text style={styles.emojiIcon}>🐄</Text>
             <Text style={styles.milkLabel}>Cow Milk</Text>
             <Text style={styles.milkValue}>{cowMilk} L</Text>
-            <Text style={styles.priceText}>Price: ₹{cowPrice}/L</Text>
+            <Text style={styles.priceText}>Price: ₹{cowRate}/L</Text>
           </View>
           <View style={styles.milkCard}>
             <Text style={styles.emojiIcon}>🐃</Text>
             <Text style={styles.milkLabel}>Buffalo Milk</Text>
             <Text style={styles.milkValue}>{buffaloMilk} L</Text>
-            <Text style={styles.priceText}>Price: ₹{buffaloPrice}/L</Text>
+            <Text style={styles.priceText}>Price: ₹{buffaloRate}/L</Text>
           </View>
         </View>
 

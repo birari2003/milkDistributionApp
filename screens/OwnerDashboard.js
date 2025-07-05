@@ -4,8 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Modal,
-  Pressable,
   ScrollView,
   Alert
 } from 'react-native';
@@ -14,18 +12,33 @@ import { useNavigation } from '@react-navigation/native';
 
 export default function AdminDashboard() {
   const navigation = useNavigation();
-  const [menuVisible, setMenuVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('Home');
+  const [cowRate, setCowRate] = useState(0);
+  const [buffaloRate, setBuffaloRate] = useState(0);
+
 
   const [cowMilk, setCowMilk] = useState(0);
   const [buffaloMilk, setBuffaloMilk] = useState(0);
   const [totalMilk, setTotalMilk] = useState(0);
 
-  const toggleMenu = () => setMenuVisible(!menuVisible);
-  const handleOption = (option) => {
-    setMenuVisible(false);
-    alert(`${option} clicked`);
-  };
+
+  useEffect(() => {
+    fetchDashboardData();
+
+    // Fetch latest milk prices
+    fetch('http://192.168.43.175:3000/api/get-latest-milk-price')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.latest) {
+          setCowRate(data.latest.cow_milk_price);
+          setBuffaloRate(data.latest.buffalo_milk_price);
+        }
+      })
+      .catch(err => {
+        console.error('Fetch price error:', err);
+      });
+  }, []);
+
 
   const fetchDashboardData = async () => {
     try {
@@ -65,16 +78,15 @@ export default function AdminDashboard() {
             <Text style={styles.emojiIcon}>🐄</Text>
             <Text style={styles.milkLabel}>Cow Milk</Text>
             <Text style={styles.milkValue}>{cowMilk} L</Text>
-            <Text style={styles.priceLabel}>Price: ₹56/L</Text>
+            <Text style={styles.priceLabel}>Price: ₹{cowRate}/L</Text>
+
           </View>
           <View style={styles.milkCard}>
             <Text style={styles.emojiIcon}>🐃</Text>
             <Text style={styles.milkLabel}>Buffalo Milk</Text>
             <Text style={styles.milkValue}>{buffaloMilk} L</Text>
-            <Text style={styles.priceLabel}>Price: ₹70/L</Text>
+            <Text style={styles.priceLabel}>Price: ₹{buffaloRate}/L</Text>
           </View>
-
-
         </View>
 
         {/* Assign Milk Option */}
@@ -166,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     elevation: 3,
-        borderStyle : ' solid',
+    borderStyle: ' solid',
     borderColor: '#023E8A',
     borderWidth: 1,
   },
@@ -197,7 +209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '45%',
     elevation: 2,
-        borderStyle : ' solid',
+    borderStyle: ' solid',
     borderColor: '#023E8A',
     borderWidth: 1,
   },

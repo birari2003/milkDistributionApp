@@ -11,15 +11,30 @@ import {
 import { MaterialIcons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const cowPrice = 56; // Price per litre of cow milk
-const buffaloPrice = 70; // Price per litre of buffalo milk
-
 
 const { width } = Dimensions.get('window');
 
 export default function CustomerDashboard() {
   const [milkInfo, setMilkInfo] = useState({ cow: 0, buffalo: 0, extra: 0, total: 0 });
   const [deliveryStatus, setDeliveryStatus] = useState(false); // can update from API later
+  const [cowRate, setCowRate] = useState(0);
+  const [buffaloRate, setBuffaloRate] = useState(0);
+
+  useEffect(() => {
+
+       fetch('http://192.168.43.175:3000/api/get-latest-milk-price')
+         .then(res => res.json())
+         .then(data => {
+           if (data.success && data.latest) {
+             setCowRate(data.latest.cow_milk_price);
+             setBuffaloRate(data.latest.buffalo_milk_price);
+           }
+         })
+         .catch(err => {
+           console.error('Fetch price error:', err);
+         });
+     }, []);
+
 
 
   useEffect(() => {
@@ -73,13 +88,13 @@ export default function CustomerDashboard() {
             <Text style={styles.emojiIcon}>🐄</Text>
             <Text style={styles.milkLabel}>Cow Milk</Text>
             <Text style={styles.milkValue}>{milkInfo.cow} L</Text>
-            <Text style={styles.priceText}>Price: ₹{cowPrice}/L</Text>
+            <Text style={styles.priceText}>Price: ₹{cowRate}/L</Text>
           </View>
           <View style={styles.milkCard}>
             <Text style={styles.emojiIcon}>🐃</Text>
             <Text style={styles.milkLabel}>Buffalo Milk</Text>
             <Text style={styles.milkValue}>{milkInfo.buffalo} L</Text>
-            <Text style={styles.priceText}>Price: ₹{buffaloPrice}/L</Text>
+            <Text style={styles.priceText}>Price: ₹{buffaloRate}/L</Text>
           </View>
         </View>
 

@@ -210,105 +210,24 @@
 
 
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  Dimensions,
-  Platform,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  SafeAreaView, ScrollView, Dimensions, Platform, Alert
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
-const customers = [
-  { id: 1, name: 'Aashish Kumar', phone: '9876543210', gender: 'male' },
-  { id: 2, name: 'Vedant Singh', phone: '9123456789', gender: 'male' },
-  // { id: 3, name: 'Rakesh Meena', phone: '9012345678', gender: 'male' },
-];
-
 export default function MilkDeliveryScreen() {
-  const [inputs, setInputs] = useState(
-    customers.reduce((acc, c) => {
-      acc[c.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
-      return acc;
-    }, {})
-  );
-  const [assigned, setAssigned] = useState(
-    customers.reduce((acc, c) => {
-      acc[c.id] = false;
-      return acc;
-    }, {})
-  );
-  const [showExtra, setShowExtra] = useState(
-    customers.reduce((acc, c) => {
-      acc[c.id] = false;
-      return acc;
-    }, {})
-  );
-  const [editing, setEditing] = useState(
-    customers.reduce((acc, c) => {
-      acc[c.id] = true;
-      return acc;
-    }, {})
-  );
-  const [error, setError] = useState(
-    customers.reduce((acc, c) => {
-      acc[c.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
-      return acc;
-    }, {})
-  );
-
-  const handleInputChange = (custId, type, value) => {
-    let val = value.replace(/[^0-9]/g, '');
-    if (val.length > 1 && val.startsWith('0')) val = val.replace(/^0+/, '');
-    if (val !== '' && parseInt(val) > 100) {
-      setInputs((prev) => ({
-        ...prev,
-        [custId]: { ...prev[custId], [type]: '' },
-      }));
-      setError((prev) => ({
-        ...prev,
-        [custId]: { ...prev[custId], [type]: 'Value exceeds above 100' },
-      }));
-    } else {
-      setInputs((prev) => ({
-        ...prev,
-        [custId]: { ...prev[custId], [type]: val },
-      }));
-      setError((prev) => ({
-        ...prev,
-        [custId]: { ...prev[custId], [type]: '' },
-      }));
-    }
-  };
-
-  const handleAssign = (custId) => {
-    setAssigned((prev) => ({
-      ...prev,
-      [custId]: true,
-    }));
-    setEditing((prev) => ({
-      ...prev,
-      [custId]: false,
-    }));
-  };
-
-  const handleEdit = (custId) => {
-    setEditing((prev) => ({
-      ...prev,
-      [custId]: true,
-    }));
-    setAssigned((prev) => ({
-      ...prev,
-      [custId]: false,
-    }));
-  };
+  const [customers, setCustomers] = useState([]);
+  const [employeeId, setEmployeeId] = useState(null);
+  const [inputs, setInputs] = useState({});
+  const [assigned, setAssigned] = useState({});
+  const [editing, setEditing] = useState({});
+  const [showExtra, setShowExtra] = useState({});
+  const [error, setError] = useState({});
 
   const getCardWidth = () => {
     if (width > 900) return 600;
@@ -317,37 +236,132 @@ export default function MilkDeliveryScreen() {
     return width - 24;
   };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        const user = JSON.parse(userStr);
+        if (user?.id) {
+          setEmployeeId(user.id);
+
+          const res = await fetch(`http://192.168.43.175:3000/api/customers?employee_id=${user.id}`);
+          const data = await res.json();
+          if (data.success && data.customers) {
+            setCustomers(data.customers);
+
+            const initInputs = {}, initAssigned = {}, initEditing = {},
+                  initExtra = {}, initErrors = {};
+
+            for (let cust of data.customers) {
+              initInputs[cust.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
+              initAssigned[cust.id] = false;
+              initEditing[cust.id] = true;
+              initExtra[cust.id] = false;
+              initErrors[cust.id] = { cow: '', buffalo: '', extraCow: '', extraBuffalo: '' };
+            }
+
+            setInputs(initInputs);
+            setAssigned(initAssigned);
+            setEditing(initEditing);
+            setShowExtra(initExtra);
+            setError(initErrors);
+
+            // Check report exists
+            for (let cust of data.customers) {
+              const checkRes = await fetch(`http://192.168.43.175:3000/api/check-daily-report?customer_id=${cust.id}`);
+              const checkData = await checkRes.json();
+              if (checkData.success && checkData.exists) {
+                setAssigned(prev => ({ ...prev, [cust.id]: true }));
+                setEditing(prev => ({ ...prev, [cust.id]: false }));
+              }
+            }
+          }
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to fetch customers');
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleInputChange = (custId, type, value) => {
+    let val = value.replace(/[^0-9]/g, '');
+    if (val.length > 1 && val.startsWith('0')) val = val.replace(/^0+/, '');
+    if (val !== '' && parseInt(val) > 100) {
+      setInputs(prev => ({ ...prev, [custId]: { ...prev[custId], [type]: '' } }));
+      setError(prev => ({ ...prev, [custId]: { ...prev[custId], [type]: 'Value exceeds 100' } }));
+    } else {
+      setInputs(prev => ({ ...prev, [custId]: { ...prev[custId], [type]: val } }));
+      setError(prev => ({ ...prev, [custId]: { ...prev[custId], [type]: '' } }));
+    }
+  };
+
+  const handleAssign = async (custId) => {
+    const data = inputs[custId];
+    if (!data?.cow && !data?.buffalo) return Alert.alert('Error', 'Enter at least one milk value');
+
+    try {
+      const res = await fetch(`http://192.168.43.175:3000/api/add-daily-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: custId,
+          got_cow_milk_today: true,
+          got_buffalo_milk_today: true,
+          will_get_cow_milk_tomorrow: true,
+          will_get_buffalo_milk_tomorrow: true,
+          extra_today: parseFloat(data.extraCow || 0) + parseFloat(data.extraBuffalo || 0),
+          extra_tomorrow: 0,
+          assigned_employee_id: employeeId,
+          override: false
+        })
+      });
+
+      const resData = await res.json();
+      if (resData.success) {
+        setAssigned(prev => ({ ...prev, [custId]: true }));
+        setEditing(prev => ({ ...prev, [custId]: false }));
+        Alert.alert('Success', 'Milk assigned');
+      } else {
+        Alert.alert('Error', resData.message || 'Submission failed');
+      }
+    } catch {
+      Alert.alert('Error', 'Server/network error');
+    }
+  };
+
+  const handleEdit = (custId) => {
+    setEditing(prev => ({ ...prev, [custId]: true }));
+    setAssigned(prev => ({ ...prev, [custId]: false }));
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {customers.map((cust) => {
-          const { cow, buffalo, extraCow, extraBuffalo } = inputs[cust.id];
-          const custError = error[cust.id];
+        {customers.map(cust => {
+          const { cow, buffalo, extraCow, extraBuffalo } = inputs[cust.id] || {};
+          const custError = error[cust.id] || {};
 
           return (
             <View key={cust.id} style={[styles.card, { width: getCardWidth(), alignSelf: 'center' }]}>
               <View style={styles.infoRow}>
-                {cust.gender === 'male' ? (
-                  <FontAwesome5 name="male" size={22} color="#2563eb" style={{ marginRight: 8 }} />
-                ) : (
-                  <FontAwesome5 name="female" size={22} color="#f43f5e" style={{ marginRight: 8 }} />
-                )}
+                {cust.gender === 'male'
+                  ? <FontAwesome5 name="male" size={22} color="#2563eb" style={{ marginRight: 8 }} />
+                  : <FontAwesome5 name="female" size={22} color="#f43f5e" style={{ marginRight: 8 }} />
+                }
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{cust.name}</Text>
                   <Text style={styles.phone}>
-                    <MaterialIcons name="phone" size={15} color="#2563eb" />{' '}
-                    <Text style={{ color: '#2563eb' }}>{cust.phone}</Text>
+                    <MaterialIcons name="phone" size={15} color="#2563eb" /> <Text style={{ color: '#2563eb' }}>{cust.phone}</Text>
                   </Text>
                 </View>
               </View>
-              {/* Inputs */}
+
               {assigned[cust.id] && !editing[cust.id] ? (
                 <View style={styles.assignedMsgRow}>
                   <Text style={styles.assignedMsg}>Milk Assigned</Text>
-                  <TouchableOpacity
-                    style={styles.editBtn}
-                    onPress={() => handleEdit(cust.id)}
-                  >
+                  <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(cust.id)}>
                     <MaterialIcons name="edit" size={22} color="#2563eb" />
                   </TouchableOpacity>
                 </View>
@@ -364,9 +378,7 @@ export default function MilkDeliveryScreen() {
                         editable={editing[cust.id]}
                         maxLength={3}
                       />
-                      {custError.cow ? (
-                        <Text style={styles.errorMsg}>{custError.cow}</Text>
-                      ) : null}
+                      {custError.cow ? <Text style={styles.errorMsg}>{custError.cow}</Text> : null}
                     </View>
                     <View style={{ flex: 1, marginLeft: 6 }}>
                       <Text style={styles.inputLabelBuffalo}>Buffalo Milk (L)</Text>
@@ -378,24 +390,19 @@ export default function MilkDeliveryScreen() {
                         editable={editing[cust.id]}
                         maxLength={3}
                       />
-                      {custError.buffalo ? (
-                        <Text style={styles.errorMsg}>{custError.buffalo}</Text>
-                      ) : null}
+                      {custError.buffalo ? <Text style={styles.errorMsg}>{custError.buffalo}</Text> : null}
                     </View>
                   </View>
+
                   <TouchableOpacity
                     style={styles.extraBtn}
-                    onPress={() =>
-                      setShowExtra((prev) => ({
-                        ...prev,
-                        [cust.id]: !prev[cust.id],
-                      }))
-                    }
+                    onPress={() => setShowExtra(prev => ({ ...prev, [cust.id]: !prev[cust.id] }))}
                   >
                     <Text style={styles.extraBtnText}>
                       {showExtra[cust.id] ? 'Hide Extra' : 'Extra'}
                     </Text>
                   </TouchableOpacity>
+
                   {showExtra[cust.id] && (
                     <View style={styles.inputLabelRow}>
                       <View style={{ flex: 1, marginRight: 6 }}>
@@ -408,9 +415,6 @@ export default function MilkDeliveryScreen() {
                           editable={editing[cust.id]}
                           maxLength={3}
                         />
-                        {custError.extraCow ? (
-                          <Text style={styles.errorMsg}>{custError.extraCow}</Text>
-                        ) : null}
                       </View>
                       <View style={{ flex: 1, marginLeft: 6 }}>
                         <Text style={styles.inputLabelBuffalo}>Extra Buffalo Milk (L)</Text>
@@ -422,31 +426,24 @@ export default function MilkDeliveryScreen() {
                           editable={editing[cust.id]}
                           maxLength={3}
                         />
-                        {custError.extraBuffalo ? (
-                          <Text style={styles.errorMsg}>{custError.extraBuffalo}</Text>
-                        ) : null}
                       </View>
                     </View>
                   )}
+
                   <View style={styles.actionRow}>
                     <TouchableOpacity
                       style={[
                         styles.assignBtn,
                         assigned[cust.id] && styles.assignedBtn,
-                        (!inputs[cust.id].cow && !inputs[cust.id].buffalo) && styles.disabledBtn,
+                        (!cow && !buffalo) && styles.disabledBtn,
                       ]}
                       onPress={() => handleAssign(cust.id)}
-                      disabled={
-                        (!inputs[cust.id].cow && !inputs[cust.id].buffalo) ||
-                        assigned[cust.id]
-                      }
+                      disabled={(!cow && !buffalo) || assigned[cust.id]}
                     >
                       <Text style={[
                         styles.assignBtnText,
                         assigned[cust.id] && styles.assignedBtnText
-                      ]}>
-                        Assign
-                      </Text>
+                      ]}>Assign</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -458,6 +455,9 @@ export default function MilkDeliveryScreen() {
     </SafeAreaView>
   );
 }
+
+// ✅ Reuse your same styles as before here...
+
 
 const styles = StyleSheet.create({
   safeArea: {

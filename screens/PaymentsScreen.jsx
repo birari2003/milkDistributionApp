@@ -14,13 +14,6 @@ export default function OwnerPaymentsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top Bar */}
-      <View style={styles.header}>
-        <TouchableOpacity>
-          <MaterialIcons name="menu" size={28} color="#2563eb" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Owner Panel</Text>
-      </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Payment Summary */}

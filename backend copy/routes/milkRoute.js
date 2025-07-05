@@ -199,6 +199,51 @@ router.get('/api/owner-employee-milk-distribution', (req, res) => {
 });
 
 
+router.post('/api/update-milk-price', (req, res) => {
+  const { cow_milk_price, buffalo_milk_price } = req.body;
+
+  if (cow_milk_price == null || buffalo_milk_price == null) {
+    return res.status(400).json({ success: false, message: "Both prices are required" });
+  }
+
+  const sql = `
+    INSERT INTO milk_prices (cow_milk_price, buffalo_milk_price)
+    VALUES (?, ?)
+  `;
+
+  db.query(sql, [cow_milk_price, buffalo_milk_price], (err, result) => {
+    if (err) {
+      console.error('Milk price update error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, message: 'Prices updated successfully' });
+  });
+});
+router.get('/api/get-latest-milk-price', (req, res) => {
+  const sql = `
+    SELECT * FROM milk_prices
+    ORDER BY updated_at DESC
+    LIMIT 2
+  `;
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error('Fetch milk prices error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    const [latest, previous] = rows;
+    res.json({
+      success: true,
+      latest: latest || null,
+      previous: previous || null
+    });
+  });
+});
+
+
+
 
 
 router.get('/api/milk-summary', (req, res) => {
@@ -401,7 +446,7 @@ router.get('/api/area-wise-report', (req, res) => {
         CASE WHEN extra_tomorrow > 0 THEN extra_tomorrow ELSE c.daily_milk_needed END
       ELSE 0 END) AS buffalo_tomorrow
 
-    FROM milkreport mr
+    FROM daily_report mr
     JOIN customer c ON mr.phone = c.phone
     JOIN area a ON mr.area_id = a.id
     JOIN employees e ON a.id = e.area_id

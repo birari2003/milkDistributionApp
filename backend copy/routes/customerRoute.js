@@ -15,9 +15,10 @@ router.post('/api/add-customer', async (req, res) => {
     daily_milk_needed,
     milk_category,
     delivery_time,
+    gender
   } = req.body;
 
-  if (!name || !phone || !password || !address || !area_id || !employee_assigned || !milk_category || !delivery_time) {
+  if (!name || !phone || !password || !address || !area_id || !employee_assigned || !milk_category || !delivery_time || !gender) {
     return res.status(400).json({ success: false, message: 'All required fields must be filled' });
   }
 
@@ -26,8 +27,8 @@ router.post('/api/add-customer', async (req, res) => {
 
     await db.execute(
       `INSERT INTO customer 
-      (name, phone, password, address, area_id, employee_assigned, daily_milk_needed, status, milk_category, delivery_time) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+      (name, phone, password, address, area_id, employee_assigned, daily_milk_needed, status, milk_category, delivery_time, gender) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
       [
         name,
         phone,
@@ -37,7 +38,8 @@ router.post('/api/add-customer', async (req, res) => {
         employee_assigned,
         daily_milk_needed || 0,
         milk_category,
-        delivery_time
+        delivery_time,
+        gender
       ]
     );
 
@@ -47,6 +49,7 @@ router.post('/api/add-customer', async (req, res) => {
     res.status(500).json({ success: false, message: 'Database error' });
   }
 });
+
 
 
 

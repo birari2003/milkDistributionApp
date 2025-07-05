@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,48 +9,26 @@ import {
   ScrollView,
   Modal,
   Animated,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { FontAwesome5, MaterialIcons, Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-const employees = [
-  { id: 1, name: 'Amit Kumar', zone: 'West Zone', avatar: 'user-alt', mobile: '9876543210' },
-  { id: 2, name: 'Priya Sharma', zone: 'North Zone', avatar: 'user-alt', mobile: '9123456780' },
-];
-
 const months = [
-    'June 2025',
-    'May 2025',
-    'April 2025',
-    'March 2025',
-    'February 2025',
-    'January 2025',
-];
-
-const salaryHistory = [
-  {
-    id: 1,
-    name: 'Amit Kumar',
-    amount: 15000,
-    mode: 'Online',
-    status: 'Paid',
-    mobile: '9876543210',
-    date: '02 May 2025',
-  },
-  {
-    id: 2,
-    name: 'Priya Sharma',
-    amount: 14000,
-    mode: 'Cash',
-    status: 'Paid',
-    mobile: '9123456780',
-    date: '03 May 2025',
-  },
+  'June 2025',
+  'May 2025',
+  'April 2025',
+  'March 2025',
+  'February 2025',
+  'January 2025',
 ];
 
 export default function EmployeeSalaryScreen() {
   const [search, setSearch] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [salaryHistory, setSalaryHistory] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(months[0]);
   const [amount, setAmount] = useState('15000');
@@ -58,7 +36,32 @@ export default function EmployeeSalaryScreen() {
   const [showModal, setShowModal] = useState(false);
   const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(true);
   const confirmAnim = useRef(new Animated.Value(0)).current;
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/employees');
+      const data = await res.json();
+      if (data.success) {
+        setEmployees(data.employees);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to fetch employees');
+    }
+  };
+
+  const fetchSalaryHistory = async () => {
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/salary-history');
+      const data = await res.json();
+      if (data.success) {
+        setSalaryHistory(data.history);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to fetch salary history');
+    }
+  };
 
   const handleEmployeePress = (emp) => {
     setSelectedEmp(emp);
@@ -76,31 +79,69 @@ export default function EmployeeSalaryScreen() {
     }).start();
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     Animated.timing(confirmAnim, {
       toValue: 0,
       duration: 200,
       useNativeDriver: true,
-    }).start(() => {
-      setShowConfirm(false);
-      setShowModal(false);
-      // Optionally, add logic to update payment history here
-    });
+    }).start();
+
+    setShowConfirm(false);
+
+    try {
+      const res = await fetch('http://192.168.43.175:3000/api/pay-salary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: selectedEmp.id,
+          employee_name: selectedEmp.name,
+          area_id: selectedEmp.area_id,      // or selectedEmp.area?.id depending on structure
+          contact: selectedEmp.contact,
+
+          amount: parseFloat(amount),
+          pay_mode: payMode,
+          month: selectedMonth,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setShowModal(false);
+        fetchSalaryHistory();
+      } else {
+        Alert.alert('Error', data.message || 'Failed to pay salary');
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Network error');
+    }
   };
+
+  const getPaidEmployeeIds = () => {
+    return salaryHistory.map((e) => `${e.employee_id}_${e.month}`);
+  };
+
+  useEffect(() => {
+    Promise.all([fetchEmployees(), fetchSalaryHistory()]).finally(() => setLoading(false));
+  }, []);
+
+  const paidIds = getPaidEmployeeIds();
+
+  const unpaidEmployees = employees.filter(
+    (emp) => !paidIds.includes(`${emp.id}_${months[0]}`)
+  );
+
+  const filteredEmployees = unpaidEmployees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(search.toLowerCase()) ||
+      emp.contact.includes(search)
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        
-        <View style={{ marginLeft: 10 }}>
-          <Text style={styles.headerTitle}>Pay Employee Salary</Text>
-        </View>
-        
-      </View>
+      <Text style={styles.headerTitle}>Pay Employee Salary</Text>
 
-      {/* Select Employee */}
-      <Text style={styles.sectionTitle}>Select Employee</Text>
+      <Text style={styles.sectionTitle}>Pending Salary - {months[0]}</Text>
       <View style={styles.searchBox}>
         <Feather name="search" size={18} color="#64748b" />
         <TextInput
@@ -111,72 +152,64 @@ export default function EmployeeSalaryScreen() {
           placeholderTextColor="#94a3b8"
         />
       </View>
-      <View style={styles.employeeList}>
-        {employees
-          .filter(emp =>
-            emp.name.toLowerCase().includes(search.toLowerCase()) ||
-            emp.mobile.includes(search)
-          )
-          .map(emp => (
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#2563eb" />
+      ) : (
+        <View style={styles.employeeList}>
+          {filteredEmployees.map((emp) => (
             <TouchableOpacity
               key={emp.id}
-              style={[
-                styles.employeeItem,
-                selectedEmp && selectedEmp.id === emp.id && styles.employeeItemActive,
-              ]}
+              style={styles.employeeItem}
               onPress={() => handleEmployeePress(emp)}
             >
-              <FontAwesome5 name={emp.avatar} size={18} color="#2563eb" />
+              <FontAwesome5 name="user-alt" size={18} color="#2563eb" />
               <Text style={styles.employeeName}>{emp.name}</Text>
-              <View style={styles.zoneTag}>
-                <Text style={styles.zoneText}>{emp.zone}</Text>
+              <View style={styles.area_idTag}>
+                {/* <Text style={styles.area_idText}>{emp.area_id}</Text> */}
+                <Text style={styles.area_idText}>{emp.area_name}</Text>
+
+
               </View>
             </TouchableOpacity>
           ))}
-      </View>
-
-      {/* Salary Payment History */}
-    
-
-<View style={styles.historyCard}>
- <Text style={styles.historyTitle}>
-    <FontAwesome5 name="history" size={16} color="#2563eb" />{' '}
-    Salary Payment History
-  </Text> {salaryHistory.map(item => (
-    <View key={item.id} style={styles.historyRow}>
-      <FontAwesome5 name="user-alt" size={18} color="#2563eb" style={{ marginRight: 8 }} />
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.historyEmp}>
-            {item.name}
-            <Text style={[
-              styles.historyStatus,
-              item.mode === 'Online' ? styles.statusOnline : styles.statusCash,
-              { marginLeft: 6, fontWeight: 'bold' }
-            ]}>
-              {' '}{item.mode === 'Online' ? 'Online' : 'Cash'}
-            </Text>
-          </Text>
         </View>
-        <Text style={styles.historyMobile}>{item.mobile}</Text>
+      )}
+
+      {/* History */}
+      <View style={styles.historyCard}>
+        <Text style={styles.historyTitle}>
+          <FontAwesome5 name="history" size={16} color="#2563eb" /> Salary Payment History
+        </Text>
+        {salaryHistory.map((item) => (
+          <View key={item.id} style={styles.historyRow}>
+            <FontAwesome5 name="user-alt" size={18} color="#2563eb" style={{ marginRight: 8 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.historyEmp}>
+                {item.employee_name}
+                <Text
+                  style={[
+                    styles.historyStatus,
+                    item.pay_mode === 'Online' ? styles.statusOnline : styles.statusCash,
+                    { marginLeft: 6, fontWeight: 'bold' },
+                  ]}
+                >
+                  {' '}
+                  {item.pay_mode}
+                </Text>
+              </Text>
+              <Text style={styles.historycontact}>{item.contact}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end', minWidth: 120 }}>
+              <Text style={styles.historyAmount}>₹{item.amount}</Text>
+              <Text style={styles.historyDate}>{item.month}</Text>
+            </View>
+          </View>
+        ))}
       </View>
-      <View style={{ alignItems: 'flex-end', minWidth: 120 }}>
-        <Text style={styles.historyAmount}>₹{item.amount}</Text>
-        <Text style={styles.historyDate}>{item.date}</Text>
-      </View>
-    </View>
-  ))}
-</View>
 
-
-
-      {/* Salary Details & Payment Modal */}
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowModal(false)}
-      >
+      {/* Salary Modal */}
+      <Modal visible={showModal} animationType="slide" transparent onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.salaryCard}>
             <View style={styles.salaryCardHeader}>
@@ -186,16 +219,17 @@ export default function EmployeeSalaryScreen() {
                 <MaterialIcons name="close" size={22} color="#64748b" />
               </TouchableOpacity>
             </View>
+
             <View style={styles.salaryRow}>
               <Text style={styles.salaryLabel}>Employee</Text>
               <Text style={styles.salaryValue}>{selectedEmp?.name}</Text>
             </View>
+
             <View style={styles.salaryRow}>
               <Text style={styles.salaryLabel}>Month</Text>
               <TouchableOpacity
                 style={styles.monthDropdown}
-                onPress={() => setMonthDropdownOpen((open) => !open)}
-                activeOpacity={0.7}
+                onPress={() => setMonthDropdownOpen(!monthDropdownOpen)}
               >
                 <Text style={styles.salaryValue}>{selectedMonth}</Text>
                 <MaterialIcons
@@ -206,6 +240,7 @@ export default function EmployeeSalaryScreen() {
                 />
               </TouchableOpacity>
             </View>
+
             {monthDropdownOpen && (
               <View style={styles.dropdownList}>
                 {months.map((month) => (
@@ -229,6 +264,7 @@ export default function EmployeeSalaryScreen() {
                 ))}
               </View>
             )}
+
             <View style={styles.salaryRow}>
               <Text style={styles.salaryLabel}>Amount</Text>
               <TextInput
@@ -239,71 +275,48 @@ export default function EmployeeSalaryScreen() {
                 maxLength={7}
               />
             </View>
+
             <Text style={styles.payByLabel}>Pay Salary By</Text>
             <View style={styles.payModeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.payModeBtn,
-                  payMode === 'Online' && styles.payModeBtnActive,
-                ]}
-                onPress={() => setPayMode('Online')}
-              >
-                <FontAwesome5 name="credit-card" size={16} color={payMode === 'Online' ? '#fff' : '#2563eb'} />
-                <Text style={[
-                  styles.payModeText,
-                  payMode === 'Online' && { color: '#fff' }
-                ]}>Online</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.payModeBtn,
-                  payMode === 'Cash' && styles.payModeBtnActive,
-                ]}
-                onPress={() => setPayMode('Cash')}
-              >
-                <FontAwesome5 name="money-bill-wave" size={16} color={payMode === 'Cash' ? '#fff' : '#2563eb'} />
-                <Text style={[
-                  styles.payModeText,
-                  payMode === 'Cash' && { color: '#fff' }
-                ]}>Cash</Text>
-              </TouchableOpacity>
+              {['Online', 'Cash'].map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  style={[styles.payModeBtn, payMode === mode && styles.payModeBtnActive]}
+                  onPress={() => setPayMode(mode)}
+                >
+                  <FontAwesome5
+                    name={mode === 'Online' ? 'credit-card' : 'money-bill-wave'}
+                    size={16}
+                    color={payMode === mode ? '#fff' : '#2563eb'}
+                  />
+                  <Text style={[styles.payModeText, payMode === mode && { color: '#fff' }]}>{mode}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
+
             <TouchableOpacity style={styles.payBtn} onPress={handlePayPress}>
               <MaterialIcons name="done" size={20} color="#fff" />
               <Text style={styles.payBtnText}>Pay Salary</Text>
             </TouchableOpacity>
           </View>
         </View>
-        {/* Confirmation Modal */}
+
         {showConfirm && (
           <Animated.View
             style={[
               styles.confirmOverlay,
               {
                 opacity: confirmAnim,
-                transform: [
-                  {
-                    scale: confirmAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1],
-                    }),
-                  },
-                ],
+                transform: [{ scale: confirmAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
               },
             ]}
           >
             <View style={styles.confirmBox}>
               <MaterialIcons name="check-circle" size={40} color="#22c55e" style={{ alignSelf: 'center' }} />
               <Text style={styles.confirmTitle}>Confirm Payment</Text>
-              <Text style={styles.confirmText}>
-                Employee: <Text style={{ fontWeight: 'bold' }}>{selectedEmp?.name}</Text>
-              </Text>
-              <Text style={styles.confirmText}>
-                Amount: <Text style={{ fontWeight: 'bold' }}>₹{amount}</Text>
-              </Text>
-              <Text style={styles.confirmText}>
-                Month: <Text style={{ fontWeight: 'bold' }}>{selectedMonth}</Text>
-              </Text>
+              <Text style={styles.confirmText}>Employee: {selectedEmp?.name}</Text>
+              <Text style={styles.confirmText}>Amount: ₹{amount}</Text>
+              <Text style={styles.confirmText}>Month: {selectedMonth}</Text>
               <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
                 <Text style={styles.confirmBtnText}>Confirm</Text>
               </TouchableOpacity>
@@ -314,6 +327,7 @@ export default function EmployeeSalaryScreen() {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -359,8 +373,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#22223b',
     marginLeft: 8,
-    height:30,
-    paddingInlineStart:3
+    height: 30,
+    paddingInlineStart: 3
   },
   employeeList: {
     width: width > 400 ? 370 : '97%',
@@ -388,14 +402,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
   },
-  zoneTag: {
+  area_idTag: {
     backgroundColor: '#f1f5f9',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginLeft: 8,
   },
-  zoneText: {
+  area_idText: {
     fontSize: 12,
     color: '#2563eb',
     fontWeight: 'bold',
@@ -561,9 +575,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginRight: 8,
     flex: 1,
-    marginTop:10,
+    marginTop: 10,
   },
-  historyMobile: {
+  historycontact: {
     fontSize: 12,
     color: '#64748b',
     marginTop: -2,

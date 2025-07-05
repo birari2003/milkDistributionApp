@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,37 +17,62 @@ import {
 const { width } = Dimensions.get('window');
 
 export default function OwnerUpdatePriceScreen() {
-  const [prevCow, setPrevCow] = useState(50);
-  const [prevBuffalo, setPrevBuffalo] = useState(60);
+const [prevCow, setPrevCow] = useState(0);
+const [prevBuffalo, setPrevBuffalo] = useState(0);
+const [cowRate, setCowRate] = useState('');
+const [buffaloRate, setBuffaloRate] = useState('');
+const [updated, setUpdated] = useState(false);
+const [updatedCow, setUpdatedCow] = useState(null);
+const [updatedBuffalo, setUpdatedBuffalo] = useState(null);
 
-  const [cowRate, setCowRate] = useState(prevCow.toString());
-  const [buffaloRate, setBuffaloRate] = useState(prevBuffalo.toString());
-  const [updated, setUpdated] = useState(false);
+useEffect(() => {
+  fetch('http://192.168.43.175:3000/api/get-latest-milk-price')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.latest) {
+        setPrevCow(data.previous?.cow_milk_price || data.latest.cow_milk_price);
+        setPrevBuffalo(data.previous?.buffalo_milk_price || data.latest.buffalo_milk_price);
+        setCowRate(data.latest.cow_milk_price.toString());
+        setBuffaloRate(data.latest.buffalo_milk_price.toString());
+      }
+    })
+    .catch(err => {
+      console.error('Fetch price error:', err);
+    });
+}, []);
 
-  const [updatedCow, setUpdatedCow] = useState(null);
-  const [updatedBuffalo, setUpdatedBuffalo] = useState(null);
 
-  const handleUpdate = () => {
-    const cow = Number(cowRate);
-    const buffalo = Number(buffaloRate);
-    setPrevCow(cow);
-    setPrevBuffalo(buffalo);
-    setUpdatedCow(cow);
-    setUpdatedBuffalo(buffalo);
-    setUpdated(true);
-    setTimeout(() => setUpdated(false), 1500);
-  };
+const handleUpdate = async () => {
+  const cow = Number(cowRate);
+  const buffalo = Number(buffaloRate);
+
+  try {
+    const res = await fetch('http://192.168.43.175:3000/api/update-milk-price', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cow_milk_price: cow, buffalo_milk_price: buffalo }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setPrevCow(cow);
+      setPrevBuffalo(buffalo);
+      setUpdatedCow(cow);
+      setUpdatedBuffalo(buffalo);
+      setUpdated(true);
+      setTimeout(() => setUpdated(false), 1500);
+    } else {
+      alert(data.message || 'Update failed');
+    }
+  } catch (err) {
+    console.error('Update error:', err);
+    alert('Network error');
+  }
+};
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
      {/* Back Arrow using FontAwesome5 */}
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={() => navigation && navigation.navigate('ownerpay')}
-      >
-        <FontAwesome5 name="arrow-left" size={20} color="#2563eb" />
-        <Text style={styles.backText}> Back</Text>
-      </TouchableOpacity>
 
       {/* Previous Rates */}
       <View style={styles.prevRateCard}>

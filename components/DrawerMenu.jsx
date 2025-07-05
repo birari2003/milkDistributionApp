@@ -8,13 +8,13 @@ import OwnerDashboard from '../screens/OwnerDashboard';
 import AddEmployee from '../screens/ManageEmployees';
 import AddCustomer from '../screens/addCustomerByOwner';
 import PaymentsScreen from '../screens/PaymentsScreen';
-import HomeScreen from '../screens/HomeScreen';
 import AreaScreen from '../screens/addArea';
 import DailyReport from '../screens/dailyReport';
 import AssignMilkScreen from './assignMilk';
 import { AuthContext } from '../App';
 import OwnerUpdatePriceScreen from '../screens/OwnerUpdatePriceScreen';
 import EmployeeSalaryScreen from '../screens/EmployeeSalaryScreen';
+import OwnerCustPayScreen from '../screens/ownerCustPayScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -112,6 +112,16 @@ const DrawerMenu = () => {
           ),
         }}
       />
+      <Drawer.Screen
+        name="Customer Payment Details"
+        component={OwnerCustPayScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cash-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      
       <Drawer.Screen
         name="Employee Salary"
         component={EmployeeSalaryScreen}
