@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,57 +10,16 @@ import {
 } from 'react-native';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import CustPayDetailsScreen from './custPayDetailScreen';
+import { toTitleCase } from './utils';
 
 
 const { width } = Dimensions.get('window');
 
-const customers = [
-    {
-        phone: '9876543210',
-        name: 'Shalini Mehta',
-        status: 'Pending',
-        amount: 12320,
-        icon: 'person',
-        iconColor: '#f59e42',
-        region: 'West Zone',
-    },
-    {
-        phone: '9123456780',
-        name: 'Amit Kumar',
-        status: 'Paid',
-        amount: 1880,
-        icon: 'person',
-        iconColor: '#2563eb',
-        region: 'North Zone',
-    },
-    {
-        phone: '9988776655',
-        name: 'Priya Sharma',
-        status: 'Pending',
-        amount: 3450,
-        icon: 'person',
-        iconColor: '#e11d48',
-        region: 'East Zone',
-    },
-    {
-        phone: '9090909090',
-        name: 'Rahul Singh',
-        status: 'Paid',
-        amount: 12320,
-        icon: 'person',
-        iconColor: '#059669',
-        region: 'South Zone',
-    },
-    {
-        phone: '9988722655',
-        name: 'Rohit Verma',
-        status: 'Pending',
-        amount: 2100,
-        icon: 'person',
-        iconColor: '#f59e42',
-        region: 'Central Zone',
-    },
-];
+
+
+
+
 
 const statusColors = {
     Paid: '#22c55e',
@@ -72,10 +31,65 @@ export default function OwnerCustPayScreen() {
     const [filter, setFilter] = useState('All');
     const [notifiedPhones, setNotifiedPhones] = useState([]);
 
+    const [allCustomers, setAllCustomers] = useState([]);
+
+    useEffect(() => {
+  fetch('http://192.168.43.175:3000/api/customers')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const fetchWithPayment = async () => {
+          const enriched = await Promise.all(
+            data.customers.map(async (cust) => {
+              const body = {
+                customer_id: cust.id,
+                year: new Date().getFullYear(),
+                month: new Date().getMonth() + 1
+              };
+
+              try {
+                const res = await fetch('http://192.168.43.175:3000/api/customer-payment-summary', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(body)
+                });
+
+                const pay = await res.json();
+
+                return {
+                  ...cust,
+                  status: pay.total_due > 0 ? 'Pending' : 'Paid',
+                  amount: pay.total_due,
+                  icon: 'person',
+                  iconColor: '#2563eb',
+                  region: cust.area || 'N/A',
+                };
+              } catch (err) {
+                console.error('Payment summary error:', err);
+                return {
+                  ...cust,
+                  status: 'Pending',
+                  amount: 0,
+                  icon: 'person',
+                  iconColor: '#e11d48',
+                  region: cust.area || 'N/A',
+                };
+              }
+            })
+          );
+
+          setAllCustomers(enriched);
+        };
+
+        fetchWithPayment();
+      }
+    });
+}, []);
+
 
     const navigation = useNavigation();
 
-    const filteredCustomers = customers.filter(c =>
+    const filteredCustomers = allCustomers.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase()) &&
         (filter === 'All' || c.status === filter)
     );
@@ -117,10 +131,10 @@ export default function OwnerCustPayScreen() {
                     <Text style={styles.paymentsTitle}>Payments</Text>
                     <TouchableOpacity
                         style={styles.seePendingBtn}
-                        onPress={() => navigation.navigate('CustPayDetailsScreen')}
+                        onPress={() => navigation.navigate('Month Wise Payment Details')}
                         
                     >
-                        <Text style={styles.seePendingText}>See Pending Payments</Text>
+                        <Text style={styles.seePendingText}>Month Wise Pending Payments</Text>
                         <MaterialIcons name="chevron-right" size={20} color="#2563eb" />
                     </TouchableOpacity>
                 </View>
@@ -156,12 +170,12 @@ export default function OwnerCustPayScreen() {
                                 <MaterialIcons name={cust.icon} size={32} color={cust.iconColor} />
                             </View>
                             <View style={{ flex: 1, marginLeft: 10 }}>
-                                <Text style={styles.custName}>{cust.name}</Text>
+                                <Text style={styles.custName}>{toTitleCase(cust.name)}</Text>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                                     <MaterialIcons name="phone" size={14} color="#64748b" style={{ marginRight: 4 }} />
                                     <Text style={styles.custId}>{cust.phone}</Text>
                                 </View>
-                                <Text style={styles.regionText}>{cust.region}</Text>
+                                {/* <Text style={styles.regionText}>{cust.region}</Text> */}
                             </View>
                             <View style={{ alignItems: 'flex-end', minWidth: 90 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>

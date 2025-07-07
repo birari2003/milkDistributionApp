@@ -77,7 +77,7 @@ router.post('/api/add-daily-report', (req, res) => {
           extra_tomorrow = ?,
           assigned_employee_id = ?
         WHERE id = ?
-      `;
+      `; 
       const values = [
         !!got_cow_milk_today,
         !!got_buffalo_milk_today,
@@ -163,6 +163,90 @@ router.get('/api/check-daily-report', (req, res) => {
 
 
 
+router.post('/api/add-daily-report-updated', (req, res) => {
+  const {
+    customer_id,
+    got_cow_milk_today = 0,
+    got_buffalo_milk_today = 0,
+    got_cow_milk_extra_today = 0,
+    got_buffalo_milk_extra_today = 0,
+    payment_type,
+    amount_paid = 0,
+    amount_remain = 0,
+    assigned_employee_id,
+  } = req.body;
+
+  if (!customer_id || !payment_type || !assigned_employee_id) {
+    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  }
+
+  // Step 1: Get current milk prices
+  const priceQuery = `SELECT cow_milk_price, buffalo_milk_price FROM milk_prices WHERE flag = 1 LIMIT 1`;
+  db.query(priceQuery, (err, priceResult) => {
+    if (err || !priceResult.length) {
+      console.error('Milk price fetch error:', err);
+      return res.status(500).json({ success: false, message: 'Failed to fetch milk prices' });
+    }
+
+    const cowRate = parseFloat(priceResult[0].cow_milk_price || 0);
+    const buffaloRate = parseFloat(priceResult[0].buffalo_milk_price || 0);
+
+    // Step 2: Calculate total liters per type
+    const total_cow_litre = parseFloat(got_cow_milk_today) + parseFloat(got_cow_milk_extra_today);
+    const total_buffalo_litre = parseFloat(got_buffalo_milk_today) + parseFloat(got_buffalo_milk_extra_today);
+
+    // Step 3: Calculate total cost per type (not rate)
+    const cow_milk_price = total_cow_litre * cowRate;
+    const buffalo_milk_price = total_buffalo_litre * buffaloRate;
+    const total_milk_price = cow_milk_price + buffalo_milk_price;
+
+    // Step 4: Insert
+    const insertSQL = `
+      INSERT INTO daily_report_updated (
+        customer_id,
+        got_cow_milk_today,
+        got_buffalo_milk_today,
+        got_cow_milk_extra_today,
+        got_buffalo_milk_extra_today,
+        payment_type,
+        amount_paid,
+        amount_remain,
+        assigned_employee_id,
+        cow_milk_price,
+        buffalo_milk_price,
+        total_milk_price
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      customer_id,
+      got_cow_milk_today,
+      got_buffalo_milk_today,
+      got_cow_milk_extra_today,
+      got_buffalo_milk_extra_today,
+      payment_type,
+      amount_paid,
+      amount_remain,
+      assigned_employee_id,
+      cow_milk_price,
+      buffalo_milk_price,
+      total_milk_price,
+    ];
+
+    db.query(insertSQL, values, (err, result) => {
+      if (err) {
+        console.error('Insert error:', err);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      res.json({ success: true, message: 'Report added successfully with calculated prices' });
+    });
+  });
+});
+
+
+
+
 router.get('/api/owner-employee-milk-distribution', (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -206,38 +290,48 @@ router.post('/api/update-milk-price', (req, res) => {
     return res.status(400).json({ success: false, message: "Both prices are required" });
   }
 
-  const sql = `
-    INSERT INTO milk_prices (cow_milk_price, buffalo_milk_price)
-    VALUES (?, ?)
+  const resetFlags = `UPDATE milk_prices SET flag = 0`;
+  const insertPrice = `
+    INSERT INTO milk_prices (cow_milk_price, buffalo_milk_price, flag)
+    VALUES (?, ?, 1)
   `;
 
-  db.query(sql, [cow_milk_price, buffalo_milk_price], (err, result) => {
-    if (err) {
-      console.error('Milk price update error:', err);
-      return res.status(500).json({ success: false, message: 'Database error' });
+  db.query(resetFlags, (err1) => {
+    if (err1) {
+      console.error('Reset flag error:', err1);
+      return res.status(500).json({ success: false, message: 'Failed to reset flags' });
     }
 
-    res.json({ success: true, message: 'Prices updated successfully' });
+    db.query(insertPrice, [cow_milk_price, buffalo_milk_price], (err2, result) => {
+      if (err2) {
+        console.error('Milk price insert error:', err2);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      res.json({ success: true, message: 'Prices updated successfully' });
+    });
   });
 });
 router.get('/api/get-latest-milk-price', (req, res) => {
-  const sql = `
-    SELECT * FROM milk_prices
-    ORDER BY updated_at DESC
-    LIMIT 2
-  `;
+  const latestSql = `SELECT * FROM milk_prices WHERE flag = 1 ORDER BY updated_at DESC LIMIT 1`;
+  const previousSql = `SELECT * FROM milk_prices WHERE flag = 0 ORDER BY updated_at DESC LIMIT 1`;
 
-  db.query(sql, (err, rows) => {
-    if (err) {
-      console.error('Fetch milk prices error:', err);
+  db.query(latestSql, (err1, latestRows) => {
+    if (err1) {
+      console.error('Fetch latest milk price error:', err1);
       return res.status(500).json({ success: false, message: 'Database error' });
     }
 
-    const [latest, previous] = rows;
-    res.json({
-      success: true,
-      latest: latest || null,
-      previous: previous || null
+    db.query(previousSql, (err2, prevRows) => {
+      if (err2) {
+        console.error('Fetch previous milk price error:', err2);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      const latest = latestRows[0] || null;
+      const previous = prevRows[0] || null;
+
+      res.json({ success: true, latest, previous });
     });
   });
 });

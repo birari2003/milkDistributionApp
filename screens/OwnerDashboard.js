@@ -59,9 +59,7 @@ export default function AdminDashboard() {
 
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+
 
   return (
     <View style={styles.container}>

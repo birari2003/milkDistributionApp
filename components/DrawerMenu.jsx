@@ -15,6 +15,7 @@ import { AuthContext } from '../App';
 import OwnerUpdatePriceScreen from '../screens/OwnerUpdatePriceScreen';
 import EmployeeSalaryScreen from '../screens/EmployeeSalaryScreen';
 import OwnerCustPayScreen from '../screens/ownerCustPayScreen';
+import CustPayDetailsScreen from '../screens/custPayDetailScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -59,33 +60,6 @@ const DrawerMenu = () => {
         }}
       />
       <Drawer.Screen
-        name="Add Employee"
-        component={AddEmployee}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="Add Customer"
-        component={AddCustomer}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-add-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="Daily Report"
-        component={DailyReport}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
         name="Assign Milk"
         component={AssignMilkScreen}
         options={{
@@ -121,7 +95,35 @@ const DrawerMenu = () => {
           ),
         }}
       />
-      
+      <Drawer.Screen
+        name="Add Employee"
+        component={AddEmployee}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Add Customer"
+        component={AddCustomer}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="person-add-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+       <Drawer.Screen
+        name="Month Wise Payment Details"
+        component={CustPayDetailsScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cash-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
       <Drawer.Screen
         name="Employee Salary"
         component={EmployeeSalaryScreen}
@@ -131,6 +133,17 @@ const DrawerMenu = () => {
           ),
         }}
       />
+      <Drawer.Screen
+        name="Daily Report"
+        component={DailyReport}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="document-text-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      
+     
       <Drawer.Screen
         name="Payments"
         component={PaymentsScreen}

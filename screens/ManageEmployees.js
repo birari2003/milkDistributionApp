@@ -5,6 +5,7 @@ import {
   useWindowDimensions, Alert
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { toTitleCase } from './utils';
 
 export default function AddEmployee() {
   const [formVisible, setFormVisible] = useState(false);
@@ -275,9 +276,9 @@ const handleEdit = (emp) => {
         renderItem={({ item }) => (
           <View style={[styles.empCard, { width: CARD_WIDTH }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.empName}>{item.name}</Text>
+              <Text style={styles.empName}>{toTitleCase(item.name)}</Text>
               <Text style={styles.empInfo}>📞 {item.contact}</Text>
-              <Text style={styles.empInfo}>📍 {item.area_name}</Text>
+              <Text style={styles.empInfo}>📍 {toTitleCase(item.area_name)}</Text>
               <Text style={[styles.empInfo, { color: item.status === 'active' ? '#22c55e' : '#ef4444' }]}>
                 {item.status === 'active' ? '✅ Active' : '❌ Inactive'}
               </Text>

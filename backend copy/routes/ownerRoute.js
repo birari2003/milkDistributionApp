@@ -218,16 +218,15 @@ router.get('/api/employee-milk-need-tomorrow', (req, res) => {
 // In your backend (Node.js + Express + MySQL)
 router.get('/api/owner-dashboard-summary', (req, res) => {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
   const sql = `
     SELECT 
       dr.customer_id,
       dr.got_cow_milk_today,
       dr.got_buffalo_milk_today,
-      dr.extra_today,
-      c.milk_category,
-      c.daily_milk_needed
-    FROM daily_report dr
-    JOIN customer c ON dr.customer_id = c.id
+      dr.got_cow_milk_extra_today,
+      dr.got_buffalo_milk_extra_today
+    FROM daily_report_updated dr
     WHERE DATE(dr.created_at) = ?
   `;
 
@@ -240,18 +239,12 @@ router.get('/api/owner-dashboard-summary', (req, res) => {
     let total_cow_milk = 0;
     let total_buffalo_milk = 0;
 
-    // console.log("Results fetched:",results, results.length, "rows");
     results.forEach(row => {
-     
-      if (row.got_cow_milk_today == 1) {
-        total_cow_milk += Number(row.extra_today);
-        total_cow_milk += Number(row.daily_milk_needed);
-      }
+      total_cow_milk += Number(row.got_cow_milk_today || 0);
+      total_cow_milk += Number(row.got_cow_milk_extra_today || 0);
 
-      if (row.got_buffalo_milk_today == 1) {
-        total_buffalo_milk += Number(row.extra_today);
-        total_buffalo_milk += Number(row.daily_milk_needed);
-      }
+      total_buffalo_milk += Number(row.got_buffalo_milk_today || 0);
+      total_buffalo_milk += Number(row.got_buffalo_milk_extra_today || 0);
     });
 
     res.json({
@@ -264,6 +257,84 @@ router.get('/api/owner-dashboard-summary', (req, res) => {
 });
 
 
+
+
+
+
+router.post('/api/customer-payment-summary', (req, res) => {
+  const { customer_id, year, month } = req.body;
+
+  if (!customer_id || !year || !month) {
+    return res.status(400).json({ success: false, message: 'Missing fields' });
+  }
+
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+
+  const sql = `
+    SELECT 
+      SUM(dr.total_milk_price) AS total_price,
+      SUM(dr.amount_paid) AS total_paid,
+      SUM(dr.amount_remain) AS total_remaining
+    FROM daily_report_updated dr
+    WHERE dr.customer_id = ? AND DATE(dr.created_at) BETWEEN ? AND ?
+  `;
+
+  db.query(sql, [customer_id, startDate, endDate], (err, results) => {
+    if (err) {
+      console.error('Payment summary error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    const row = results[0] || {};
+    res.json({
+      success: true,
+      total_price: parseFloat(row.total_price || 0),
+      total_paid: parseFloat(row.total_paid || 0),
+      total_due: parseFloat(row.total_price || 0) - parseFloat(row.total_paid || 0),
+    });
+  });
+});
+
+router.get('/api/owner-payments-summary', (req, res) => {
+  const year = new Date().getFullYear();
+  const month = new Date().getMonth() + 1;
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+
+  const sql = `
+    SELECT
+      SUM(total_milk_price) AS total_expected,
+      SUM(amount_paid) AS total_paid,
+      SUM(CASE WHEN payment_type = 'cash' THEN amount_paid ELSE 0 END) AS cash_paid,
+      SUM(CASE WHEN payment_type = 'online' THEN amount_paid ELSE 0 END) AS online_paid
+    FROM daily_report_updated
+    WHERE DATE(created_at) BETWEEN ? AND ?
+  `;
+
+  db.query(sql, [startDate, endDate], (err, results) => {
+    if (err) {
+      console.error('Owner summary error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    const row = results[0] || {};
+    const total_expected = parseFloat(row.total_expected || 0);
+    const total_paid = parseFloat(row.total_paid || 0);
+    const cash_paid = parseFloat(row.cash_paid || 0);
+    const online_paid = parseFloat(row.online_paid || 0);
+    const amount_remaining = total_expected - total_paid;
+
+    res.json({
+      success: true,
+      total_expected,
+      total_paid,
+      cash_paid,
+      online_paid,
+      amount_remaining,
+    });
+  });
+});
 
 
 

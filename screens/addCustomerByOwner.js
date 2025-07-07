@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { toTitleCase } from './utils';
 
 
 const { width } = Dimensions.get('window');
@@ -224,7 +225,7 @@ export default function AddCustomer() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.name}>{toTitleCase(item.name)}</Text>
               <Text style={styles.phone}>📞 {item.phone}</Text>
             </View>
 

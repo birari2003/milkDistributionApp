@@ -9,6 +9,8 @@ import DrawerMenu from './components/DrawerMenu';
 import DrawerMenuEmployee from './components/DrawerMenuEmployee';
 import DrawerMenuCustomer from './components/DrawerMenuCustomer';
 import OnboardingScreen from './screens/OnboardingScreen';
+import OwnerCustPayScreen from './screens/ownerCustPayScreen';
+import CustPayDetailsScreen from './screens/custPayDetailScreen';
 
 export const AuthContext = createContext();
 
@@ -50,6 +52,8 @@ export default function App() {
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen name="OwnerLogin" component={OwnerLogin} />
               <Stack.Screen name="OwnerSignup" component={OwnerSignup} />
+              <Stack.Screen name="OwnerCustPayScreen" component={OwnerCustPayScreen} />
+              <Stack.Screen name="CustPayDetailsScreen" component={CustPayDetailsScreen} />
             </>
           )}
         </Stack.Navigator>

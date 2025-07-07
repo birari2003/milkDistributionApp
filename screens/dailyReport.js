@@ -8,6 +8,7 @@ import {
   StatusBar,
   Modal,
   FlatList,
+  border,
   Pressable,
   useWindowDimensions,
 } from 'react-native';
@@ -40,7 +41,6 @@ export default function OwnerInventory({ navigation }) {
     const d = new Date(date);
     return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`;
   };
-
 
   useEffect(() => {
     fetchSummary();
@@ -103,17 +103,17 @@ export default function OwnerInventory({ navigation }) {
             <MaterialCommunityIcons name="cup-water" size={28} color="#2563eb" />
             <Text style={styles.headerTitle}>Milk Inventory</Text>
           </View>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.reportsBtn}
             onPress={() => navigation.navigate('Report')}
             activeOpacity={0.8}
           >
             <MaterialCommunityIcons name="file-chart" size={18} color="#fff" />
             <Text style={styles.reportsBtnText}>REPORTS</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 }}>
+        {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 }}>
           <TouchableOpacity
             style={styles.datePickerBox}
             onPress={() => { setActivePicker('from'); setShowPicker(true); }}
@@ -129,7 +129,7 @@ export default function OwnerInventory({ navigation }) {
             <MaterialCommunityIcons name="calendar" size={20} color="#2563eb" />
             <Text style={styles.datePickerText}>{formatDate(toDate)}</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
 
         <DateTimePickerModal
@@ -249,11 +249,11 @@ export default function OwnerInventory({ navigation }) {
                       <MaterialCommunityIcons name="phone" size={14} color="#60a5fa" /> {item.phone}
                     </Text>
                     <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                      <MaterialCommunityIcons name="cow" size={14} color="#22c55e" />
+                      <Text style={{ fontSize: 14 }}>🐄</Text>
                       <Text style={styles.empMilk}>Cow Milk: {item.cow} L</Text>
                     </View>
                     <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                      <MaterialCommunityIcons name="cow" size={14} color="#facc15" />
+                      <Text style={{ fontSize: 14 }}>🐃</Text>
                       <Text style={styles.empMilk}>Buffalo Milk: {item.buffalo} L</Text>
                     </View>
                   </View>
@@ -319,6 +319,14 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 18,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'solid',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1.41,
+    
   },
   sectionTitleBlack: {
     fontSize: 16,
@@ -347,7 +355,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     padding: 10,
     elevation: 1,
-    border
+     borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1.41,
+
   },
   milkTypeLabel: {
     fontSize: 14,

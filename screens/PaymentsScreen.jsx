@@ -1,55 +1,74 @@
- import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
 export default function OwnerPaymentsScreen() {
-  // Example data, replace with real data from backend
-  const totalToReceive = 120000;
-  const actualReceived = 90000;
-  const cashReceived = 35000;    // Example static value
-  const onlineReceived = 55000;  // Example static value
-  const amountRemaining = totalToReceive - actualReceived;
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState({
+    total_expected: 0,
+    total_paid: 0,
+    cash_paid: 0,
+    online_paid: 0,
+    amount_remaining: 0,
+  });
+
+  useEffect(() => {
+    fetch('http://192.168.43.175:3000/api/owner-payments-summary')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setSummary(data);
+        else console.warn('Failed to load summary');
+      })
+      .catch(err => console.error('Fetch error:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={{ marginTop: 10 }}>Loading Payment Summary...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Payment Summary */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <FontAwesome name="rupee" size={22} color="#2563eb" />
             <Text style={styles.summaryLabel}>Expected Amount</Text>
-            <Text style={styles.summaryValue}>₹{totalToReceive.toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>₹{summary.total_expected.toLocaleString()}</Text>
           </View>
           <View style={styles.summaryRow}>
             <FontAwesome name="check-circle" size={22} color="#22c55e" />
             <Text style={styles.summaryLabel}>Received</Text>
-            <Text style={[styles.summaryValue, { color: '#22c55e' }]}>₹{actualReceived.toLocaleString()}</Text>
+            <Text style={[styles.summaryValue, { color: '#22c55e' }]}>₹{summary.total_paid.toLocaleString()}</Text>
           </View>
-          {/* Cash and Online received below Received */}
           <View style={styles.receivedBreakupRow}>
             <View style={styles.receivedType}>
               <MaterialIcons name="payments" size={18} color="#2563eb" />
               <Text style={styles.receivedTypeLabel}>Cash:</Text>
-              <Text style={styles.receivedTypeValue}>₹{cashReceived.toLocaleString()}</Text>
+              <Text style={styles.receivedTypeValue}>₹{summary.cash_paid.toLocaleString()}</Text>
             </View>
             <View style={styles.receivedType}>
               <MaterialIcons name="credit-card" size={18} color="#22c55e" />
               <Text style={styles.receivedTypeLabel}>Online:</Text>
-              <Text style={styles.receivedTypeValue}>₹{onlineReceived.toLocaleString()}</Text>
+              <Text style={styles.receivedTypeValue}>₹{summary.online_paid.toLocaleString()}</Text>
             </View>
           </View>
           <View style={styles.summaryRow}>
             <FontAwesome name="exclamation-circle" size={22} color="#f43f5e" />
             <Text style={styles.summaryLabel}>Amount Remaining</Text>
-            <Text style={[styles.summaryValue, { color: '#f43f5e' }]}>₹{amountRemaining.toLocaleString()}</Text>
+            <Text style={[styles.summaryValue, { color: '#f43f5e' }]}>₹{summary.amount_remaining.toLocaleString()}</Text>
           </View>
         </View>
 
-        {/* Section Title */}
-        <Text style={styles.sectionTitle}>Payments & Operations</Text>
+     <Text style={styles.sectionTitle}>Payments & Operations</Text>
         <Text style={styles.sectionDesc}>Quick access to manage your dairy finances</Text>
 
         {/* Options */}
@@ -87,6 +106,7 @@ export default function OwnerPaymentsScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
+import { toTitleCase } from './utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
@@ -193,7 +194,7 @@ export default function EmpInventoryScreen() {
               <View key={cust.id} style={styles.notTakenCard}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                   <FontAwesome5 name="user" size={16} color="#f43f5e" style={{ marginRight: 8 }} />
-                  <Text style={styles.notTakenName}>{cust.name}</Text>
+                  <Text style={styles.notTakenName}>{toTitleCase(cust.name)}</Text>
                 </View>
                 <View style={styles.notTakenPhoneRow}>
                   <MaterialIcons name="phone" size={15} color="#2563eb" />
@@ -227,7 +228,7 @@ export default function EmpInventoryScreen() {
                 <View style={styles.infoLeft}>
                   <View style={styles.infoRow}>
                     <FontAwesome5 name="user" size={20} color="#2563eb" style={{ marginRight: 8 }} />
-                    <Text style={styles.name}>{cust.name}</Text>
+                    <Text style={styles.name}>{toTitleCase(cust.name)}</Text>
                   </View>
                   <View style={styles.phoneRow}>
                     <Text style={styles.phone}>

@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { FontAwesome5, MaterialIcons, Feather } from '@expo/vector-icons';
+import { toTitleCase } from './utils';
 
 const { width } = Dimensions.get('window');
 
@@ -164,12 +165,10 @@ export default function EmployeeSalaryScreen() {
               onPress={() => handleEmployeePress(emp)}
             >
               <FontAwesome5 name="user-alt" size={18} color="#2563eb" />
-              <Text style={styles.employeeName}>{emp.name}</Text>
+              <Text style={styles.employeeName}>{toTitleCase(emp.name)}</Text>
               <View style={styles.area_idTag}>
                 {/* <Text style={styles.area_idText}>{emp.area_id}</Text> */}
-                <Text style={styles.area_idText}>{emp.area_name}</Text>
-
-
+                <Text style={styles.area_idText}>{toTitleCase(emp.area_name)}</Text>
               </View>
             </TouchableOpacity>
           ))}

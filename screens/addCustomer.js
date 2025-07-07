@@ -14,6 +14,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState, useEffect } from 'react';
+import { toTitleCase } from './utils';
 
 const genderColors = {
   Male: '#2563eb',
@@ -162,18 +163,18 @@ export default function AddCustomerScreen() {
         />
       </View>
       <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text style={styles.customerName}>{item.name}</Text>
+        <Text style={styles.customerName}>{toTitleCase(item.name)}</Text>
         <Text style={styles.customerMobile}>
           <MaterialCommunityIcons name="phone" size={15} color="#60a5fa" />{' '}
           {item.phone}
         </Text>
-        <Text style={styles.customerAddress}>{item.address}</Text>
+        <Text style={styles.customerAddress}>{toTitleCase(item.address)}</Text>
         <Text style={styles.customerRegion}>
           <MaterialCommunityIcons name="map-marker" size={14} color="#a21caf" />{' '}
-          {item.area_name}
+          {toTitleCase(item.area_name)}
         </Text>
         <Text style={styles.customerAddress}>
-          ⏰ Delivery: {item.delivery_time}
+          ⏰ Delivery: {toTitleCase(item.delivery_time)}
         </Text>
       </View>
     </View>

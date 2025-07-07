@@ -13,6 +13,7 @@ import {
   Platform
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { toTitleCase } from '../screens/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -134,6 +135,9 @@ export default function AssignMilkScreen() {
       if (result.success) {
         setAssigned(prev => ({ ...prev, [empId]: true }));
         setEditing(prev => ({ ...prev, [empId]: false }));
+
+        // ✅ Update assignedToday list manually
+        setAssignedToday(prev => [...new Set([...prev, empId])]);
       } else {
         Alert.alert('Error', result.message || 'Assignment failed');
       }
@@ -193,9 +197,9 @@ export default function AssignMilkScreen() {
               <View style={{ flexDirection: 'row', marginBottom: 10 }}>
                 <MaterialIcons name="person" size={22} color="#8b5cf6" style={{ marginRight: 8 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{emp.name}</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{toTitleCase(emp.name)}</Text>
                   <Text style={{ color: '#2563eb', fontSize: 13 }}>{emp.contact}</Text>
-                  <Text style={{ color: '#22c55e', fontSize: 13 }}>{emp.area_name}</Text>
+                  <Text style={{ color: '#22c55e', fontSize: 13 }}>{toTitleCase(emp.area_name)}</Text>
                 </View>
               </View>
 
