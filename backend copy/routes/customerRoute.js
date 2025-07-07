@@ -127,9 +127,10 @@ router.post('/api/customer-today-milk', (req, res) => {
     SELECT 
       got_cow_milk_today, 
       got_buffalo_milk_today, 
-      extra_today, 
+      got_cow_milk_extra_today, 
+      got_buffalo_milk_extra_today,  
       created_at 
-    FROM daily_report 
+    FROM daily_report_updated 
     WHERE customer_id = ? AND DATE(created_at) = ?
     ORDER BY created_at DESC 
     LIMIT 1
@@ -162,7 +163,6 @@ router.post('/api/customer-today-milk', (req, res) => {
 
 
 // API Endpoint: /api/customer-monthly-milk-summary
-
 router.post('/api/customer-monthly-milk-summary', (req, res) => {
   const { customer_id, year, month } = req.body;
 
@@ -179,8 +179,9 @@ router.post('/api/customer-monthly-milk-summary', (req, res) => {
   DATE_FORMAT(created_at, '%Y-%m-%d') AS date,
   SUM(got_cow_milk_today) AS cow,
   SUM(got_buffalo_milk_today) AS buffalo,
-  SUM(extra_today) AS extra
-FROM daily_report
+  SUM(got_cow_milk_extra_today) AS extra,
+  SUM(got_buffalo_milk_extra_today) AS extra
+FROM daily_report_updated
 WHERE customer_id = ? 
   AND DATE(created_at) BETWEEN ? AND ?
 GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
@@ -199,22 +200,22 @@ ORDER BY DATE(created_at)
     let totalExtra = 0;
 
     results.forEach(row => {
-  const date = row.date;
-  const cow = parseFloat(row.cow) || 0;
-  const buffalo = parseFloat(row.buffalo) || 0;
-  const extra = parseFloat(row.extra) || 0;
+      const date = row.date;
+      const cow = parseFloat(row.cow) || 0;
+      const buffalo = parseFloat(row.buffalo) || 0;
+      const extra = parseFloat(row.extra) || 0;
 
-  daily[date] = {
-    cow,
-    buffalo,
-    extra,
-    total: cow + buffalo + extra
-  };
+      daily[date] = {
+        cow,
+        buffalo,
+        extra,
+        total: cow + buffalo + extra
+      };
 
-  totalCow += cow;
-  totalBuffalo += buffalo;
-  totalExtra += extra;
-});
+      totalCow += cow;
+      totalBuffalo += buffalo;
+      totalExtra += extra;
+    });
 
 
     res.json({

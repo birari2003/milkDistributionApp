@@ -129,7 +129,7 @@ router.get('/api/employee-customers-report', async (req, res) => {
     SELECT c.id AS customer_id, c.name, c.phone,
            dr.got_cow_milk_today, dr.got_buffalo_milk_today
     FROM customer c
-    LEFT JOIN daily_report dr
+    LEFT JOIN daily_report_updated dr
       ON c.id = dr.customer_id AND DATE(dr.created_at) = ?
     WHERE c.employee_assigned = ? AND c.status = 'active'
   `;
@@ -180,33 +180,58 @@ router.get('/api/employee-milk-leftover', (req, res) => {
     return res.status(400).json({ success: false, message: "emp_id is required" });
   }
 
-  const today = new Date().toISOString().slice(0, 10); // e.g., '2025-06-29'
+  const today = new Date().toISOString().slice(0, 10);
 
-  const sql = `
+  // 1. Get assigned milk
+  const assignedSql = `
     SELECT
-      IFNULL(SUM(am.cow_milk + am.extra_cow_milk), 0) AS assignedCow,
-      IFNULL(SUM(am.buffalo_milk + am.extra_buffalo_milk), 0) AS assignedBuffalo,
-      IFNULL(SUM(dr.got_cow_milk_today + dr.extra_today), 0) AS distributedCow,
-      IFNULL(SUM(dr.got_buffalo_milk_today + dr.extra_today), 0) AS distributedBuffalo
-    FROM assign_milk am
-    LEFT JOIN daily_report dr
-      ON am.employee_id = dr.customer_id AND DATE(am.assigned_at) = DATE(dr.created_at)
-    WHERE am.employee_id = ? AND DATE(am.assigned_at) = ?
+      IFNULL(SUM(cow_milk + extra_cow_milk), 0) AS assignedCow,
+      IFNULL(SUM(buffalo_milk + extra_buffalo_milk), 0) AS assignedBuffalo
+    FROM assign_milk
+    WHERE employee_id = ? AND DATE(assigned_at) = ?
   `;
 
-  db.query(sql, [employeeId, today], (err, result) => {
-    if (err) {
-      console.error("DB ERROR:", err);
-      return res.status(500).json({ success: false, message: "DB error" });
+  // 2. Get distributed milk
+  const distributedSql = `
+    SELECT
+      IFNULL(SUM(got_cow_milk_today + got_cow_milk_extra_today), 0) AS distributedCow,
+      IFNULL(SUM(got_buffalo_milk_today + got_buffalo_milk_extra_today), 0) AS distributedBuffalo
+    FROM daily_report_updated
+    WHERE assigned_employee_id = ? AND DATE(created_at) = ?
+  `;
+
+  db.query(assignedSql, [employeeId, today], (err1, assignedResult) => {
+    if (err1) {
+      console.error("DB ERROR (assigned):", err1);
+      return res.status(500).json({ success: false, message: "DB error in assigned milk" });
     }
 
-    const r = result[0];
-    const cowLeft = r.assignedCow - r.distributedCow;
-    const buffaloLeft = r.assignedBuffalo - r.distributedBuffalo;
+    db.query(distributedSql, [employeeId, today], (err2, distResult) => {
+      if (err2) {
+        console.error("DB ERROR (distributed):", err2);
+        return res.status(500).json({ success: false, message: "DB error in distributed milk" });
+      }
 
-    res.json({ success: true, cowLeft, buffaloLeft });
+      const a = assignedResult[0];
+      const d = distResult[0];
+
+      const cowLeft = a.assignedCow - d.distributedCow;
+      const buffaloLeft = a.assignedBuffalo - d.distributedBuffalo;
+
+      res.json({
+        success: true,
+        cowLeft,
+        buffaloLeft,
+        details: {
+          assigned: { cow: a.assignedCow, buffalo: a.assignedBuffalo },
+          distributed: { cow: d.distributedCow, buffalo: d.distributedBuffalo },
+        }
+      });
+    });
   });
 });
+
+
 
 // POST /api/return-milk
 router.post('/api/return-milk', (req, res) => {

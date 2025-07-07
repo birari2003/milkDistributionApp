@@ -39,9 +39,9 @@ const DrawerMenuCustomer = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} />,
         }}  
       />
-            <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
+            {/* <Drawer.Screen name="Payments" component={PaymentsScreen} options={{
         drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
-      }} />
+      }} /> */}
       <Drawer.Screen
         name="Logout"
         component={() => (

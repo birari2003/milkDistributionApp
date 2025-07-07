@@ -32,7 +32,7 @@ router.post('/api/login', async (req, res) => {
        WHERE e.contact = ?`,
       [phone]
     );
-    
+     
     if (employees.length > 0) {
       const emp = employees[0];
       const match = await bcrypt.compare(password, emp.password);

@@ -140,9 +140,14 @@
 //             <TouchableOpacity>
 //               <Text style={styles.forgetText}>Forgot password?</Text>
 //             </TouchableOpacity>
+//             <TouchableOpacity onPress={() => navigation.navigate('OwnerSignup')}>
+//   <Text style={styles.signupText}>Don't have an account? Sign up here</Text>
+// </TouchableOpacity>
+
 //             {successMsg ? <Text style={styles.successMsg}>{successMsg}</Text> : null}
 //           </View>
 //         </View>
+        
 //       </ScrollView>
 //     </KeyboardAvoidingView>
 //   );
@@ -391,7 +396,7 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ImageBackground
-        source={require('../images/login.png')} // ✅ Local image
+        source={require('../images/logo.png')} // ✅ Local image
         style={styles.backgroundImage}
         resizeMode="cover"
       >
